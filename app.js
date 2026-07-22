@@ -16,6 +16,12 @@ var CLASSIFICATIONS = ['Homicide', 'Tentative', 'Braquage', 'Criminalite organis
 var CONFIDENTIALITIES = ['CID uniquement', 'Command Staff', 'SASP'];
 var PERSON_TYPES = ['Citoyen', 'Suspect', 'Victime', 'Temoin', 'Informateur', 'Agent infiltre', 'Enqueteur'];
 var EVIDENCE_TYPES = ['Photo', 'Document', 'ADN', 'Douille', 'Empreinte', 'Arme', 'Drogue', 'Vehicule', 'Objet', 'Telephone', 'Temoignage', 'Autre'];
+var CID_OPTIONS_KEY = 'sasp_cid_managed_options_v1';
+var OPTION_GROUPS = {
+  priorites: { title: 'Priorites', defaults: PRIORITIES },
+  classifications: { title: 'Classifications', defaults: CLASSIFICATIONS },
+  confidentialites: { title: 'Confidentialites', defaults: CONFIDENTIALITIES }
+};
 
 function $(id) { return document.getElementById(id); }
 function esc(v) {
@@ -30,6 +36,21 @@ function nowLabel() {
 function uid(prefix) { return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7); }
 function options(list, selected) {
   return list.map(function(v) { return '<option value="' + esc(v) + '"' + (v === selected ? ' selected' : '') + '>' + esc(v) + '</option>'; }).join('');
+}
+
+function managedOptionsLoad() {
+  try { return JSON.parse(localStorage.getItem(CID_OPTIONS_KEY) || '{}'); }
+  catch(e) { return {}; }
+}
+
+function managedOptionsSave(data) {
+  localStorage.setItem(CID_OPTIONS_KEY, JSON.stringify(data));
+}
+
+function managedOptions(key) {
+  var group = OPTION_GROUPS[key];
+  var saved = managedOptionsLoad()[key];
+  return (saved && saved.length ? saved : group.defaults).slice();
 }
 
 function getDb() {
@@ -167,6 +188,7 @@ function renderApp() {
           navButton('dossiers', 'Dossiers', '▣'),
           navButton('personnes', 'Personnes', '♙'),
           navButton('preuves', 'Preuves', '◆'),
+          navButton('gestion', 'Gestion', '⚙'),
           '<div class="nav-group"><span>Historique</span></div>',
           navButton('archives', 'Archives', '▤'),
         '</nav>',
@@ -213,6 +235,7 @@ function renderContent() {
   if (STATE.route.page === 'dashboard') return renderDashboard();
   if (STATE.route.page === 'personnes') return renderPeopleIndex();
   if (STATE.route.page === 'preuves') return renderEvidenceIndex();
+  if (STATE.route.page === 'gestion') return renderGestion();
   if (STATE.route.page === 'archives') return renderDossiers(true);
   renderDossiers(false);
 }
@@ -379,6 +402,61 @@ function renderEvidenceIndex() {
   $('content').innerHTML = '<section class="panel section"><h2>Preuves CID</h2><table><thead><tr><th>Apercu</th><th>Scelle</th><th>Type</th><th>Infos</th><th>Dossier</th></tr></thead><tbody>' + (rows.length ? rows.map(function(r) { return '<tr><td>' + attachmentHtml(r.e.attachment, functionName('previewEvidence', r.c.id, r.e.id)) + '</td><td>' + esc(r.e.scelle) + '</td><td>' + badge(r.e.type, 'gold') + '</td><td>' + esc(proofDetailsText(r.c, r.e) || r.e.description || '-') + '</td><td>' + esc(r.c.numero) + '</td></tr>'; }).join('') : '<tr><td colspan="5">Aucune preuve.</td></tr>') + '</tbody></table></section>';
 }
 
+function renderGestion() {
+  $('content').innerHTML = [
+    '<section class="panel section">',
+      '<div class="panel-head flush-head"><div><div class="kicker">Configuration CID</div><h1>Gestion des listes</h1></div></div>',
+      '<p class="text">Modifie les choix disponibles dans les dossiers CID. Les changements s\'appliquent aux nouveaux dossiers et aux prochaines modifications.</p>',
+      '<div class="gestion-grid">',
+        managedOptionPanel('priorites', 'Priorites', 'Ex : Urgent, Surveillance, Analyse'),
+        managedOptionPanel('classifications', 'Classifications', 'Ex : Homicide, Stupefiants, Braquage'),
+        managedOptionPanel('confidentialites', 'Confidentialites', 'Niveau de diffusion du dossier'),
+      '</div>',
+    '</section>'
+  ].join('');
+}
+
+function managedOptionPanel(key, title, placeholder) {
+  var list = managedOptions(key);
+  return [
+    '<section class="option-panel">',
+      '<div class="option-head"><h2>' + esc(title) + '</h2><button class="btn btn-ghost btn-small" onclick="resetManagedOptions(' + js(key) + ')">Reset</button></div>',
+      '<div class="option-list">',
+        list.map(function(value) {
+          return '<div class="option-row"><span>' + esc(value) + '</span><button class="btn btn-red btn-small" onclick="deleteManagedOption(' + js(key) + ',' + js(value) + ')">Supprimer</button></div>';
+        }).join(''),
+      '</div>',
+      '<div class="option-add"><input id="add_' + esc(key) + '" placeholder="' + esc(placeholder) + '"><button class="btn btn-gold btn-small" onclick="addManagedOption(' + js(key) + ')">Ajouter</button></div>',
+    '</section>'
+  ].join('');
+}
+
+function addManagedOption(key) {
+  var input = $('add_' + key);
+  var value = input && input.value.trim();
+  if (!value) return;
+  var data = managedOptionsLoad();
+  var list = managedOptions(key);
+  if (!list.some(function(v) { return v.toLowerCase() === value.toLowerCase(); })) list.push(value);
+  data[key] = list;
+  managedOptionsSave(data);
+  renderGestion();
+}
+
+function deleteManagedOption(key, value) {
+  var data = managedOptionsLoad();
+  data[key] = managedOptions(key).filter(function(v) { return v !== value; });
+  managedOptionsSave(data);
+  renderGestion();
+}
+
+function resetManagedOptions(key) {
+  var data = managedOptionsLoad();
+  delete data[key];
+  managedOptionsSave(data);
+  renderGestion();
+}
+
 function badge(text, tone) { return '<span class="badge ' + (tone || '') + '">' + esc(text || '-') + '</span>'; }
 function statusBadge(v) { return badge(v || '-', /ferme|classe/i.test(v || '') ? 'green' : v === 'En attente' ? 'orange' : 'blue'); }
 function priorityBadge(v) { return badge(v || 'Normale', v === 'Critique' ? 'red' : v === 'Haute' ? 'orange' : v === 'Faible' ? 'green' : 'gold'); }
@@ -400,14 +478,14 @@ function openCaseModal(id) {
     '<form id="caseForm"><div class="form-grid">' +
       field('Titre de l\'enquete', '<input name="titre" placeholder="Nom du dossier / enquete" value="' + esc(c && c.titre || '') + '" required>') +
       field('Statut du dossier', '<select name="statut">' + options(STATUSES, c && c.statut || 'Ouvert') + '</select>') +
-      field('Priorite', '<select name="priorite">' + options(PRIORITIES, c && c.priorite || 'Normale') + '</select>') +
-      field('Classification', '<select name="classification">' + options(CLASSIFICATIONS, c && c.classification || 'Autre') + '</select>') +
-      field('Confidentialite', '<select name="confidentialite">' + options(CONFIDENTIALITIES, c && c.confidentialite || 'CID uniquement') + '</select>') +
+      field('Priorite', '<select name="priorite">' + options(managedOptions('priorites'), c && c.priorite || 'Normale') + '</select>') +
+      field('Classification', '<select name="classification">' + options(managedOptions('classifications'), c && c.classification || 'Autre') + '</select>') +
+      field('Confidentialite', '<select name="confidentialite">' + options(managedOptions('confidentialites'), c && c.confidentialite || 'CID uniquement') + '</select>') +
       field('Responsable', '<input name="responsable" placeholder="Agent responsable" value="' + esc(c && c.responsable || displayName()) + '">') +
       field('Resume rapide', '<textarea name="resume" rows="3" placeholder="Resume court du dossier">' + esc(c && c.resume || '') + '</textarea>', 'full') +
       field('Description complete', '<textarea name="description" rows="6" placeholder="Faits, contexte, elements connus...">' + esc(c && c.description || '') + '</textarea>', 'full') +
     '</div></form>',
-    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="saveCase(' + js(id || '') + ')">Sauvegarder</button>'
+    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="saveCase(' + (id ? js(id) : '') + ')">Sauvegarder</button>'
   );
 }
 
@@ -417,6 +495,7 @@ function field(label, control, extraClass) {
 
 function saveCase(id) {
   var f = $('caseForm');
+  if (!f || !f.reportValidity()) return;
   var fd = new FormData(f);
   var list = casesLoad();
   var old = id ? caseGet(id) : null;

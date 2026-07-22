@@ -431,6 +431,64 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
 .field textarea {
   width: 100%;
 }
+.gestion-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+.option-panel {
+  border: 1px solid rgba(216,182,71,.18);
+  border-radius: 9px;
+  background: rgba(12, 12, 12, .72);
+  padding: 12px;
+  min-height: 260px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+}
+.option-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid rgba(216,182,71,.12);
+  padding-bottom: 10px;
+}
+.option-head h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.option-list {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  max-height: 360px;
+  overflow: auto;
+}
+.option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(216,182,71,.14);
+  border-radius: 7px;
+  background: rgba(0,0,0,.22);
+  padding: 8px;
+}
+.option-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.option-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  border-top: 1px solid rgba(216,182,71,.12);
+  padding-top: 10px;
+}
 .hidden { display: none !important; }
 
 .person-page {
@@ -446,13 +504,13 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
   .app-shell { grid-template-columns: 1fr; }
   .sidebar { display: none; }
   .mdt-grid, .detail-grid, .wide-grid { grid-template-columns: 1fr; }
-  .dashboard-grid, .chip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-grid, .chip-grid, .gestion-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .topbar { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 650px) {
   .content { padding: 10px; }
-  .dashboard-grid, .chip-grid, .form-grid { grid-template-columns: 1fr; }
+  .dashboard-grid, .chip-grid, .form-grid, .gestion-grid { grid-template-columns: 1fr; }
   .workspace-head { grid-template-columns: 1fr; }
   .actions { justify-content: flex-start; }
 }
