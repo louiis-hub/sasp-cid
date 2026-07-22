@@ -227,7 +227,7 @@ button { cursor: pointer; }
   z-index: 5;
 }
 .searchbox {
-  max-width: 620px;
+  max-width: none;
   width: 100%;
   background: rgba(8, 8, 8, .94);
   border: 1px solid var(--line);
@@ -542,7 +542,8 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
 .note-item strong { display: block; margin-bottom: 5px; color: #e7f1ff; }
 .note-item span { display: block; white-space: pre-wrap; }
 .search-results-panel {
-  max-width: 1100px;
+  width: 100%;
+  max-width: none;
 }
 .search-results {
   display: grid;

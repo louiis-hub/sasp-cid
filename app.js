@@ -335,8 +335,32 @@ function renderSearchResults() {
   var results = [];
   if (q) {
     casesLoad().forEach(function(c) {
-      if (matchText([c.numero, c.titre, c.statut, c.priorite, c.classification, c.confidentialite, c.resume, c.description, c.responsable].join(' '), q)) {
-        results.push({ type: 'Dossier', title: (c.numero || '-') + ' - ' + (c.titre || 'Dossier sans titre'), meta: searchContext([c.resume, c.description, c.statut, c.priorite, c.classification], q), action: callAttr('openSearchResult', 'dossiers', { id: c.id }) });
+      var dossierFields = [c.numero, c.titre, c.statut, c.priorite, c.classification, c.confidentialite, c.resume, c.description, c.responsable];
+      var peopleFields = (c.personnes || []).map(function(p) {
+        return [p.nom, p.type, p.tel, p.discord_id, p.rapport_mdt, p.rapport_event_url, p.commentaires].join(' ');
+      });
+      var proofFields = (c.preuves || []).map(function(e) {
+        return [e.scelle, e.type, e.description, proofDetailsText(c, e), e.attachment && e.attachment.name].join(' ');
+      });
+      var noteFields = (c.journal || []).filter(function(j) { return j.type === 'note'; }).map(function(j) {
+        return [j.date, j.texte].join(' ');
+      });
+      if (matchText(dossierFields.concat(peopleFields, proofFields, noteFields).join(' '), q)) {
+        var linkedCounts = [];
+        var peopleHits = peopleFields.filter(function(v) { return matchText(v, q); }).length;
+        var proofHits = proofFields.filter(function(v) { return matchText(v, q); }).length;
+        var noteHits = noteFields.filter(function(v) { return matchText(v, q); }).length;
+        if (peopleHits) linkedCounts.push(peopleHits + ' personne' + (peopleHits > 1 ? 's' : ''));
+        if (proofHits) linkedCounts.push(proofHits + ' preuve' + (proofHits > 1 ? 's' : ''));
+        if (noteHits) linkedCounts.push(noteHits + ' note' + (noteHits > 1 ? 's' : ''));
+        results.push({
+          type: 'Dossier',
+          title: (c.numero || '-') + ' - ' + (c.titre || 'Dossier sans titre'),
+          meta: matchText(dossierFields.join(' '), q)
+            ? searchContext([c.resume, c.description, c.statut, c.priorite, c.classification, c.confidentialite, c.responsable], q)
+            : 'Contient : ' + (linkedCounts.join(', ') || 'resultat lie'),
+          action: callAttr('openSearchResult', 'dossiers', { id: c.id })
+        });
       }
       (c.personnes || []).forEach(function(p) {
         if (matchText([p.nom, p.type, p.tel, p.discord_id, p.rapport_mdt, p.rapport_event_url, p.commentaires].join(' '), q)) {
