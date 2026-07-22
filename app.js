@@ -1,6 +1,9 @@
 var WORKER_BASE = 'https://sasp-intranet-bot.louisleurin.workers.dev';
 var CID_STORE_KEY = 'sasp_cid_cases_v2';
 var EFFECTIVE_CID_ROLE_ID = window.CID_ROLE_ID || '1518631634524569641';
+var CID_INVESTIGATOR_ROLE_ID = '1518631634524569641';
+var CID_DELETE_ROLE_ID = '1501526499910746132';
+var DISCORD_ROLE_MEMBER_CACHE = {};
 
 var STATE = {
   user: null,
@@ -14,13 +17,14 @@ var STATUSES = ['Ouvert', 'En attente', 'Ferme', 'Classe'];
 var PRIORITIES = ['Faible', 'Normale', 'Haute', 'Critique'];
 var CLASSIFICATIONS = ['Homicide', 'Tentative', 'Braquage', 'Criminalite organisee', 'Corruption', 'Terrorisme', 'Enlevement', 'Stupefiants', 'Fraude', 'Cybercriminalite', 'Violences', 'Cambriolage', 'Autre'];
 var CONFIDENTIALITIES = ['CID uniquement', 'Command Staff', 'SASP'];
-var PERSON_TYPES = ['Citoyen', 'Suspect', 'Victime', 'Temoin', 'Informateur', 'Agent infiltre', 'Enqueteur'];
+var PERSON_TYPES = ['Citoyen', 'Suspect', 'Victime', 'Temoin', 'Informateur', 'Enqueteur'];
 var EVIDENCE_TYPES = ['Photo', 'Document', 'ADN', 'Douille', 'Empreinte', 'Arme', 'Drogue', 'Vehicule', 'Objet', 'Telephone', 'Temoignage', 'Autre'];
 var CID_OPTIONS_KEY = 'sasp_cid_managed_options_v1';
 var OPTION_GROUPS = {
   priorites: { title: 'Priorites', defaults: PRIORITIES },
   classifications: { title: 'Classifications', defaults: CLASSIFICATIONS },
-  confidentialites: { title: 'Confidentialites', defaults: CONFIDENTIALITIES }
+  confidentialites: { title: 'Confidentialites', defaults: CONFIDENTIALITIES },
+  types_preuves: { title: 'Types de preuve', defaults: EVIDENCE_TYPES }
 };
 
 function $(id) { return document.getElementById(id); }
@@ -125,6 +129,12 @@ async function loadDiscordRoles(user) {
 function hasAccess() {
   if (STATE.roles.some(function(r) { return ROLE_ADMIN_IDS.indexOf(r) !== -1; })) return true;
   return STATE.roles.indexOf(EFFECTIVE_CID_ROLE_ID) !== -1;
+}
+function hasAdminRole() {
+  return STATE.roles.some(function(r) { return ROLE_ADMIN_IDS.indexOf(r) !== -1; });
+}
+function canDeleteCases() {
+  return hasAdminRole() || STATE.roles.indexOf(CID_DELETE_ROLE_ID) !== -1;
 }
 
 async function boot() {
@@ -337,7 +347,7 @@ function renderWorkspace(c) {
     '<div class="workspace">',
       '<div class="workspace-head">',
         '<div><div class="case-id">' + esc(c.numero) + '</div><h1>' + esc(c.titre) + '</h1><div class="subline"><span>Ouvert le ' + esc(c.date_ouverture) + '</span><span>Derniere modif. ' + esc(c.updated_at) + '</span><span>Par ' + esc(c.responsable || 'CID') + '</span></div></div>',
-        '<div class="actions"><button class="btn btn-ghost btn-small" onclick="' + callAttr('openCaseModal', c.id) + '">Modifier</button><button class="btn btn-ghost btn-small" onclick="' + callAttr('openNoteModal', c.id) + '">Note</button><button class="btn btn-blue btn-small" onclick="' + callAttr('openPersonModal', c.id) + '">Personne</button><button class="btn btn-gold btn-small" onclick="' + callAttr('openEvidenceModal', c.id) + '">Preuve</button><button class="btn btn-ghost btn-small" onclick="' + callAttr('archiveCase', c.id) + '">Archiver</button><button class="btn btn-red btn-small" onclick="' + callAttr('deleteCase', c.id) + '">Supprimer</button></div>',
+        '<div class="actions"><button type="button" class="btn btn-ghost btn-small" onclick="' + callAttr('openCaseModal', c.id) + '">Modifier</button><button type="button" class="btn btn-ghost btn-small" onclick="' + callAttr('openNoteModal', c.id) + '">Note</button><button type="button" class="btn btn-blue btn-small" onclick="' + callAttr('openPersonModal', c.id) + '">Personne</button><button type="button" class="btn btn-gold btn-small" onclick="' + callAttr('openEvidenceModal', c.id) + '">Preuve</button><button type="button" class="btn btn-ghost btn-small" onclick="' + callAttr('archiveCase', c.id) + '">Archiver</button>' + (canDeleteCases() ? '<button type="button" class="btn btn-red btn-small" onclick="' + callAttr('deleteCase', c.id) + '">Supprimer</button>' : '') + '</div>',
       '</div>',
       '<div class="chip-grid">',
         chip('Statut', statusBadge(c.statut)),
@@ -417,6 +427,7 @@ function renderGestion() {
         managedOptionPanel('priorites', 'Priorites', 'Ex : Urgent, Surveillance, Analyse'),
         managedOptionPanel('classifications', 'Classifications', 'Ex : Homicide, Stupefiants, Braquage'),
         managedOptionPanel('confidentialites', 'Confidentialites', 'Niveau de diffusion du dossier'),
+        managedOptionPanel('types_preuves', 'Types de preuve', 'Ex : Photo, Douille, Vehicule'),
       '</div>',
     '</section>'
   ].join('');
@@ -471,7 +482,7 @@ function functionName(name) {
 }
 
 function openModal(title, body, footer) {
-  $('modalRoot').innerHTML = '<section class="modal"><div class="modal-head"><h2>' + esc(title) + '</h2><button class="btn btn-ghost btn-small" onclick="closeModal()">X</button></div><div class="modal-body">' + body + '</div><div class="modal-foot">' + footer + '</div></section>';
+  $('modalRoot').innerHTML = '<section class="modal"><div class="modal-head"><h2>' + esc(title) + '</h2><button type="button" class="btn btn-ghost btn-small" onclick="closeModal()">X</button></div><div class="modal-body">' + body + '</div><div class="modal-foot">' + footer + '</div></section>';
   $('modalRoot').classList.add('show');
 }
 function closeModal() { $('modalRoot').classList.remove('show'); $('modalRoot').innerHTML = ''; }
@@ -489,7 +500,7 @@ function openCaseModal(id) {
       field('Resume rapide', '<textarea name="resume" rows="3" placeholder="Resume court du dossier">' + esc(c && c.resume || '') + '</textarea>', 'full') +
       field('Description complete', '<textarea name="description" rows="6" placeholder="Faits, contexte, elements connus...">' + esc(c && c.description || '') + '</textarea>', 'full') +
     '</div></form>',
-    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="' + (id ? callAttr('saveCase', id) : 'saveCase()') + '">Sauvegarder</button>'
+    '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + (id ? callAttr('saveCase', id) : 'saveCase()') + '">Sauvegarder</button>'
   );
 }
 
@@ -528,18 +539,54 @@ function saveCase(id) {
 function openPersonModal(caseId) {
   openModal('Ajouter une personne',
     '<form id="personForm"><div class="form-grid">' +
-      '<input name="nom" placeholder="Nom / prenom" required>' +
-      '<select name="type">' + options(PERSON_TYPES, 'Suspect') + '</select>' +
-      '<input name="tel" placeholder="Numero de telephone">' +
+      '<input id="personName" name="nom" placeholder="Nom / prenom" required>' +
+      '<select id="personType" name="type" onchange="togglePersonFields()">' + options(PERSON_TYPES, 'Suspect') + '</select>' +
+      '<div id="investigatorField" class="full hidden"><select id="investigatorSelect" name="discord_id" onchange="fillInvestigatorFromSelect()"><option value="">Chargement des enqueteurs CID...</option></select></div>' +
+      '<input name="tel" placeholder="555-1234">' +
       '<textarea class="full" name="commentaires" rows="4" placeholder="Commentaires CID"></textarea>' +
     '</div></form>',
-    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="' + callAttr('savePerson', caseId) + '">Ajouter</button>'
+    '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('savePerson', caseId) + '">Ajouter</button>'
   );
+  togglePersonFields();
+}
+async function loadDiscordRoleMembers(roleId) {
+  if (DISCORD_ROLE_MEMBER_CACHE[roleId]) return DISCORD_ROLE_MEMBER_CACHE[roleId];
+  var res = await fetch(workerUrl('/discord/agents-roster', { guild_id: GUILD_ID, role_ids: roleId, limit: 1000 }));
+  if (!res.ok) throw new Error('Roster Discord indisponible.');
+  var data = await res.json();
+  DISCORD_ROLE_MEMBER_CACHE[roleId] = data.agents || [];
+  return DISCORD_ROLE_MEMBER_CACHE[roleId];
+}
+async function togglePersonFields() {
+  var type = $('personType') && $('personType').value;
+  var wrap = $('investigatorField');
+  var select = $('investigatorSelect');
+  if (!wrap || !select) return;
+  wrap.classList.toggle('hidden', type !== 'Enqueteur');
+  if (type !== 'Enqueteur' || select.dataset.loaded === '1') return;
+  select.innerHTML = '<option value="">Chargement des enqueteurs CID...</option>';
+  try {
+    var agents = await loadDiscordRoleMembers(CID_INVESTIGATOR_ROLE_ID);
+    select.dataset.loaded = '1';
+    select.innerHTML = '<option value="">Selectionner un enqueteur CID</option>' + agents.map(function(a) {
+      var label = (a.matricule ? '[' + a.matricule + '] ' : '') + a.prenom + ' ' + a.nom + (a.grade ? ' - ' + a.grade : '');
+      return '<option value="' + esc(a.discord_id) + '" data-name="' + esc(a.prenom + ' ' + a.nom) + '">' + esc(label) + '</option>';
+    }).join('');
+  } catch (e) {
+    select.innerHTML = '<option value="">Impossible de charger la liste Discord</option>';
+  }
+}
+function fillInvestigatorFromSelect() {
+  var select = $('investigatorSelect');
+  var option = select && select.options[select.selectedIndex];
+  if (option && option.dataset.name && $('personName')) $('personName').value = option.dataset.name;
 }
 function savePerson(caseId) {
   var c = caseGet(caseId);
+  var form = $('personForm');
+  if (!form || !form.reportValidity()) return;
   var fd = new FormData($('personForm'));
-  var p = { id: uid('person'), nom: fd.get('nom'), type: fd.get('type'), tel: fd.get('tel') || '', commentaires: fd.get('commentaires') || '', fichiers: [] };
+  var p = { id: uid('person'), nom: fd.get('nom'), type: fd.get('type'), tel: fd.get('tel') || '', discord_id: fd.get('discord_id') || '', commentaires: fd.get('commentaires') || '', fichiers: [] };
   c.personnes = c.personnes || [];
   c.personnes.push(p);
   c.journal = c.journal || [];
@@ -574,14 +621,14 @@ function openEvidenceModal(caseId) {
   var suspects = '<option value="">Non attribue</option>' + (c.personnes || []).filter(function(p) { return p.type === 'Suspect'; }).map(function(p) { return '<option value="' + esc(p.id) + '">' + esc(p.nom) + '</option>'; }).join('');
   openModal('Ajouter une preuve',
     '<form id="evidenceForm"><div class="form-grid">' +
-      '<select name="type" id="evidenceType" onchange="toggleEvidenceFields()">' + options(EVIDENCE_TYPES, 'Photo') + '</select>' +
+      '<select name="type" id="evidenceType" onchange="toggleEvidenceFields()">' + options(managedOptions('types_preuves'), 'Photo') + '</select>' +
       '<div id="fileField"><input name="fichier" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"></div>' +
       '<div id="weaponFields" class="form-grid full hidden"><input name="type_arme" placeholder="Type d\'arme"><input name="numero_serie" placeholder="Numero de serie"><select name="suspect_arme">' + suspects + '</select></div>' +
       '<div id="drugFields" class="form-grid full hidden"><input name="type_drogue" placeholder="Type de drogue"><input name="quantite" placeholder="Quantite"><select name="suspect_drogue">' + suspects + '</select></div>' +
       '<div id="vehicleFields" class="form-grid full hidden"><input name="modele" placeholder="Modele du vehicule"><input name="plaque" placeholder="Plaque"><select name="suspect_vehicule">' + suspects + '</select></div>' +
       '<textarea class="full" name="description" rows="4" placeholder="Description / contexte"></textarea>' +
     '</div></form>',
-    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="' + callAttr('saveEvidence', caseId) + '">Ajouter</button>'
+    '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('saveEvidence', caseId) + '">Ajouter</button>'
   );
   toggleEvidenceFields();
 }
@@ -624,7 +671,7 @@ async function saveEvidence(caseId) {
 }
 
 function openNoteModal(caseId) {
-  openModal('Ajouter une note', '<form id="noteForm"><textarea name="note" rows="6" placeholder="Note CID..." required></textarea></form>', '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="' + callAttr('saveNote', caseId) + '">Ajouter</button>');
+  openModal('Ajouter une note', '<form id="noteForm"><textarea name="note" rows="6" placeholder="Note CID..." required></textarea></form>', '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('saveNote', caseId) + '">Ajouter</button>');
 }
 function saveNote(caseId) {
   var c = caseGet(caseId);
@@ -637,7 +684,7 @@ function saveNote(caseId) {
 }
 
 function openPersonFileModal(caseId, pid) {
-  openModal('Ajouter un fichier personne', '<form id="personFileForm"><div class="form-grid"><select name="type">' + options(['Photo','Video','Audio','Document','Autre'], 'Photo') + '</select><input name="fichier" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" required><textarea class="full" name="note" rows="3" placeholder="Note"></textarea></div></form>', '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="' + callAttr('savePersonFile', caseId, pid) + '">Ajouter</button>');
+  openModal('Ajouter un fichier personne', '<form id="personFileForm"><div class="form-grid"><select name="type">' + options(['Photo','Video','Audio','Document','Autre'], 'Photo') + '</select><input name="fichier" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" required><textarea class="full" name="note" rows="3" placeholder="Note"></textarea></div></form>', '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('savePersonFile', caseId, pid) + '">Ajouter</button>');
 }
 async function savePersonFile(caseId, pid) {
   var c = caseGet(caseId);
@@ -695,11 +742,16 @@ function displayName() {
 function archiveCase(id) {
   var c = caseGet(id);
   if (!c) return;
+  if (!confirm('Archiver ce dossier CID ?')) return;
   c.statut = 'Classe';
   caseUpsert(c);
   renderApp();
 }
 function deleteCase(id) {
+  if (!canDeleteCases()) {
+    alert('Acces refuse: seul le role autorise ou les administrateurs peuvent supprimer un dossier CID.');
+    return;
+  }
   if (!confirm('Supprimer definitivement ce dossier CID ?')) return;
   casesSave(casesLoad().filter(function(c) { return c.id !== id; }));
   STATE.route = { page: 'dossiers' };

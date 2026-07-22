@@ -414,6 +414,16 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
 .modal-foot { border-top: 1px solid var(--line); border-bottom: 0; justify-content: flex-end; }
 .modal-body { padding: 16px; }
 .modal h2 { margin: 0; font-size: 20px; }
+.modal form,
+.modal textarea,
+.modal input,
+.modal select {
+  width: 100%;
+}
+.modal-body > form > textarea {
+  display: block;
+  min-height: 150px;
+}
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .form-grid > .full { grid-column: 1 / -1; }
 .field {
