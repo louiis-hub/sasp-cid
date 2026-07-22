@@ -505,7 +505,7 @@ function peopleTable(c, people) {
 function evidenceTable(c, proofs) {
   if (!proofs.length) return '<div class="text">Aucune preuve scellee.</div>';
   return '<table><thead><tr><th>Apercu</th><th>Scelle</th><th>Type</th><th>Infos</th></tr></thead><tbody>' + proofs.map(function(e) {
-    return '<tr><td>' + attachmentHtml(e.attachment, functionName('previewEvidence', c.id, e.id)) + '</td><td>' + esc(e.scelle || '-') + '</td><td>' + badge(e.type, 'gold') + '</td><td>' + esc(proofDetailsText(c, e) || e.description || '-') + '</td></tr>';
+    return '<tr class="clickable" onclick="' + callAttr('openEvidenceModal', c.id, e.id) + '"><td onclick="event.stopPropagation()">' + attachmentHtml(e.attachment, functionName('previewEvidence', c.id, e.id)) + '</td><td>' + esc(e.scelle || '-') + '</td><td>' + badge(e.type, 'gold') + '</td><td>' + esc(proofDetailsText(c, e) || e.description || '-') + '</td></tr>';
   }).join('') + '</tbody></table>';
 }
 
@@ -548,7 +548,7 @@ function renderPeopleIndex() {
 function renderEvidenceIndex() {
   var rows = [];
   casesLoad().forEach(function(c) { (c.preuves || []).forEach(function(e) { rows.push({ c: c, e: e }); }); });
-  $('content').innerHTML = '<section class="panel section"><h2>Preuves CID</h2><table><thead><tr><th>Apercu</th><th>Scelle</th><th>Type</th><th>Infos</th><th>Dossier</th></tr></thead><tbody>' + (rows.length ? rows.map(function(r) { return '<tr><td>' + attachmentHtml(r.e.attachment, functionName('previewEvidence', r.c.id, r.e.id)) + '</td><td>' + esc(r.e.scelle) + '</td><td>' + badge(r.e.type, 'gold') + '</td><td>' + esc(proofDetailsText(r.c, r.e) || r.e.description || '-') + '</td><td>' + esc(r.c.numero) + '</td></tr>'; }).join('') : '<tr><td colspan="5">Aucune preuve.</td></tr>') + '</tbody></table></section>';
+  $('content').innerHTML = '<section class="panel section"><h2>Preuves CID</h2><table><thead><tr><th>Apercu</th><th>Scelle</th><th>Type</th><th>Infos</th><th>Dossier</th></tr></thead><tbody>' + (rows.length ? rows.map(function(r) { return '<tr class="clickable" onclick="' + callAttr('openEvidenceModal', r.c.id, r.e.id) + '"><td onclick="event.stopPropagation()">' + attachmentHtml(r.e.attachment, functionName('previewEvidence', r.c.id, r.e.id)) + '</td><td>' + esc(r.e.scelle) + '</td><td>' + badge(r.e.type, 'gold') + '</td><td>' + esc(proofDetailsText(r.c, r.e) || r.e.description || '-') + '</td><td>' + esc(r.c.numero) + '</td></tr>'; }).join('') : '<tr><td colspan="5">Aucune preuve.</td></tr>') + '</tbody></table></section>';
 }
 
 function renderGestion() {
@@ -771,20 +771,23 @@ function confirmDeletePerson(caseId, pid) {
   renderApp();
 }
 
-function openEvidenceModal(caseId) {
+function openEvidenceModal(caseId, evidenceId) {
   var c = caseGet(caseId);
-  var suspects = '<option value="">Non attribue</option>' + (c.personnes || []).filter(function(p) { return p.type === 'Suspect'; }).map(function(p) { return '<option value="' + esc(p.id) + '">' + esc(p.nom) + '</option>'; }).join('');
-  openModal('Ajouter une preuve',
+  var e = evidenceId ? (c.preuves || []).find(function(x) { return x.id === evidenceId; }) : null;
+  var d = e && e.details || {};
+  var suspectId = d.suspect_id || '';
+  var suspects = '<option value="">Non attribue</option>' + (c.personnes || []).filter(function(p) { return p.type === 'Suspect'; }).map(function(p) { return '<option value="' + esc(p.id) + '"' + (p.id === suspectId ? ' selected' : '') + '>' + esc(p.nom) + '</option>'; }).join('');
+  openModal(e ? 'Modifier la preuve' : 'Ajouter une preuve',
     '<form id="evidenceForm"><div class="form-grid">' +
-      '<select name="type" id="evidenceType" onchange="toggleEvidenceFields()">' + options(managedOptions('types_preuves'), 'Photo') + '</select>' +
-      '<div id="fileField"><input name="fichier" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"></div>' +
-      '<div id="weaponFields" class="form-grid full hidden"><input name="type_arme" placeholder="Type d\'arme"><input name="numero_serie" placeholder="Numero de serie"><select name="suspect_arme">' + suspects + '</select></div>' +
-      '<div id="drugFields" class="form-grid full hidden"><input name="type_drogue" placeholder="Type de drogue"><input name="quantite" placeholder="Quantite"><select name="suspect_drogue">' + suspects + '</select></div>' +
-      '<div id="vehicleFields" class="form-grid full hidden"><input name="modele" placeholder="Modele du vehicule"><input name="plaque" placeholder="Plaque"><select name="suspect_vehicule">' + suspects + '</select></div>' +
-      '<textarea class="full" name="description" rows="4" placeholder="Description / contexte"></textarea>' +
+      '<select name="type" id="evidenceType" onchange="toggleEvidenceFields()">' + options(managedOptions('types_preuves'), e && e.type || 'Photo') + '</select>' +
+      '<div id="fileField"><input name="fichier" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">' + (e && e.attachment ? '<div class="text mini">Fichier actuel : ' + esc(e.attachment.name || 'piece jointe') + '</div>' : '') + '</div>' +
+      '<div id="weaponFields" class="form-grid full hidden"><input name="type_arme" placeholder="Type d\'arme" value="' + esc(d.type_arme || '') + '"><input name="numero_serie" placeholder="Numero de serie" value="' + esc(d.numero_serie || '') + '"><select name="suspect_arme">' + suspects + '</select></div>' +
+      '<div id="drugFields" class="form-grid full hidden"><input name="type_drogue" placeholder="Type de drogue" value="' + esc(d.type_drogue || '') + '"><input name="quantite" placeholder="Quantite" value="' + esc(d.quantite || '') + '"><select name="suspect_drogue">' + suspects + '</select></div>' +
+      '<div id="vehicleFields" class="form-grid full hidden"><input name="modele" placeholder="Modele du vehicule" value="' + esc(d.modele || '') + '"><input name="plaque" placeholder="Plaque" value="' + esc(d.plaque || '') + '"><select name="suspect_vehicule">' + suspects + '</select></div>' +
+      '<textarea class="full" name="description" rows="4" placeholder="Description / contexte">' + esc(e && e.description || '') + '</textarea>' +
       '<div id="evidenceError" class="form-error full"></div>' +
     '</div></form>',
-    '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('saveEvidence', caseId) + '">Ajouter</button>'
+    '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>' + (e ? '<button type="button" class="btn btn-red" onclick="' + callAttr('deleteEvidence', caseId, evidenceId) + '">Supprimer</button>' : '') + '<button type="button" class="btn btn-gold" onclick="' + callAttr('saveEvidence', caseId, evidenceId || '') + '">' + (e ? 'Sauvegarder' : 'Ajouter') + '</button>'
   );
   toggleEvidenceFields();
 }
@@ -856,11 +859,13 @@ async function readFile(input) {
     r.readAsDataURL(file);
   });
 }
-async function saveEvidence(caseId) {
+async function saveEvidence(caseId, evidenceId) {
   try {
     setModalError('evidenceError', '');
     var c = caseGet(caseId);
     if (!c) throw new Error('Dossier introuvable.');
+    c.preuves = c.preuves || [];
+    var existing = evidenceId ? c.preuves.find(function(x) { return x.id === evidenceId; }) : null;
     var f = $('evidenceForm');
     var fd = new FormData(f);
     var type = fd.get('type');
@@ -868,18 +873,34 @@ async function saveEvidence(caseId) {
     if (type === 'Arme') details = { type_arme: fd.get('type_arme') || '', numero_serie: fd.get('numero_serie') || '', suspect_id: fd.get('suspect_arme') || '' };
     if (type === 'Drogue') details = { type_drogue: fd.get('type_drogue') || '', quantite: fd.get('quantite') || '', suspect_id: fd.get('suspect_drogue') || '' };
     if (type === 'Vehicule') details = { modele: fd.get('modele') || '', plaque: fd.get('plaque') || '', suspect_id: fd.get('suspect_vehicule') || '' };
-    var seal = 'SC-' + new Date().getFullYear() + '-' + String((c.preuves || []).length + 1).padStart(4, '0');
-    var attachment = await readFile(f.querySelector('input[type=file]'));
-    c.preuves = c.preuves || [];
-    c.preuves.push({ id: uid('evidence'), scelle: seal, type: type, description: fd.get('description') || '', details: details, attachment: attachment, date: nowLabel() });
+    var seal = existing && existing.scelle || 'SC-' + new Date().getFullYear() + '-' + String(c.preuves.length + 1).padStart(4, '0');
+    var newAttachment = await readFile(f.querySelector('input[type=file]'));
+    var saved = existing || { id: uid('evidence'), scelle: seal, date: nowLabel() };
+    saved.type = type;
+    saved.description = fd.get('description') || '';
+    saved.details = details;
+    saved.attachment = newAttachment || saved.attachment || null;
+    if (!existing) c.preuves.push(saved);
     c.journal = c.journal || [];
-    c.journal.unshift({ date: nowLabel(), texte: 'Preuve ajoutee: ' + seal, type: 'system' });
+    c.journal.unshift({ date: nowLabel(), texte: (existing ? 'Preuve modifiee: ' : 'Preuve ajoutee: ') + seal, type: 'system' });
     caseUpsert(c);
     closeModal();
     renderApp();
   } catch (e) {
     setModalError('evidenceError', e && e.name === 'QuotaExceededError' ? 'Stockage navigateur plein. Supprime quelques grosses preuves ou utilise une image plus legere.' : (e.message || 'Impossible d ajouter la preuve.'));
   }
+}
+
+function deleteEvidence(caseId, evidenceId) {
+  openConfirmModal('Supprimer la preuve', 'Cette preuve sera retiree du dossier CID.', 'danger', callAttr('confirmDeleteEvidence', caseId, evidenceId));
+}
+function confirmDeleteEvidence(caseId, evidenceId) {
+  var c = caseGet(caseId);
+  if (!c) return;
+  c.preuves = (c.preuves || []).filter(function(e) { return e.id !== evidenceId; });
+  caseUpsert(c);
+  closeModal();
+  renderApp();
 }
 
 function openNoteModal(caseId) {
