@@ -231,12 +231,21 @@ function renderDashboard() {
       '<div class="panel-head" style="padding:0 0 14px;border-bottom:0"><div><div class="kicker">CID MDT</div><h1 style="margin:8px 0 0">Poste de commandement enquete</h1></div><button class="btn btn-gold" onclick="openCaseModal()">Nouveau dossier</button></div>',
       '<p class="text">Interface separee pour les dossiers CID : suspects, victimes, enqueteurs, preuves, photos, videos, notes et archives.</p>',
     '</section>',
-    '<div style="height:14px"></div>',
-    renderCaseBoard(false)
-  ].join('');
-  wireCaseControls();
+    '<section class="panel section compact-panel">',
+      '<div class="panel-head flush-head"><div class="panel-title">Derniers dossiers</div><button class="btn btn-ghost btn-small" onclick="go(' + js('dossiers') + ')">Ouvrir les dossiers</button></div>',
+      recentCasesPanel(list),
+    '</section>'
+    ].join('');
 }
 function stat(n, label) { return '<div class="stat-card"><strong>' + n + '</strong><span>' + esc(label) + '</span></div>'; }
+
+function recentCasesPanel(list) {
+  var recent = list.slice().sort(function(a, b) { return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); }).slice(0, 5);
+  if (!recent.length) return '<div class="small-empty">Aucun dossier CID pour le moment.</div>';
+  return '<div class="mini-list">' + recent.map(function(c) {
+    return '<button class="mini-row" onclick="go(' + js('dossiers') + ',{id:' + js(c.id) + '})"><span>' + esc(c.numero) + '</span><strong>' + esc(c.titre || 'Dossier sans titre') + '</strong>' + statusBadge(c.statut) + '</button>';
+  }).join('') + '</div>';
+}
 
 function renderDossiers(includeArchived) {
   $('content').innerHTML = renderCaseBoard(includeArchived);
