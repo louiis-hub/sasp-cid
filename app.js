@@ -245,7 +245,7 @@ function exampleCase(list) {
 }
 
 function renderApp() {
-  var userName = STATE.user && STATE.user.user_metadata && (STATE.user.user_metadata.full_name || STATE.user.user_metadata.name) || 'CID';
+  var userName = displayName();
   $('app').innerHTML = [
     '<div class="app-shell">',
       '<aside class="sidebar">',
@@ -1012,7 +1012,18 @@ function personName(c, id) {
   return p ? p.nom : '';
 }
 function displayName() {
-  return STATE.user && STATE.user.user_metadata && (STATE.user.user_metadata.full_name || STATE.user.user_metadata.name) || 'CID';
+  var meta = STATE.user && STATE.user.user_metadata || {};
+  var identity = STATE.user && STATE.user.identities && STATE.user.identities.find(function(i) { return i.provider === 'discord'; });
+  var data = identity && identity.identity_data || {};
+  var raw = meta.full_name || meta.name || meta.global_name || data.full_name || data.name || data.global_name || meta.preferred_username || data.preferred_username || meta.user_name || meta.username || data.user_name || data.username || 'CID';
+  return cleanDiscordDisplayName(raw);
+}
+function cleanDiscordDisplayName(raw) {
+  var name = String(raw || '').trim();
+  name = name.replace(/^\s*\[[^\]]+\]\s*/, '');
+  name = name.replace(/^\s*\d+\s*[-|]\s*/, '');
+  name = name.replace(/\s+/g, ' ').trim();
+  return name || 'CID';
 }
 function archiveCase(id) {
   var c = caseGet(id);
