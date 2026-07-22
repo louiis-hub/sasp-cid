@@ -493,8 +493,11 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
 .preview-img { width: 94px; height: 62px; border-radius: 6px; object-fit: cover; border: 1px solid var(--line2); }
 .empty { min-height: 340px; display: grid; place-items: center; text-align: center; color: var(--muted); }
 .note-list { display: grid; gap: 8px; max-height: 300px; overflow: auto; }
-.note-item { border: 1px solid rgba(216,182,71,.18); border-radius: 8px; background: rgba(12, 12, 12, .7); padding: 11px; }
+.note-item { width: 100%; border: 1px solid rgba(216,182,71,.18); border-radius: 8px; background: rgba(12, 12, 12, .7); padding: 11px; color: var(--text); text-align: left; font: inherit; }
+.clickable-note { cursor: pointer; }
+.clickable-note:hover { border-color: rgba(216,182,71,.44); background: rgba(19, 24, 31, .86); }
 .note-item strong { display: block; margin-bottom: 5px; color: #e7f1ff; }
+.note-item span { display: block; white-space: pre-wrap; }
 .search-results-panel {
   max-width: 1100px;
 }

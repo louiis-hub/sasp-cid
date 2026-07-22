@@ -458,7 +458,7 @@ function renderWorkspace(c) {
   if (STATE.route.person) return renderPersonWorkspace(c, STATE.route.person);
   var people = c.personnes || [];
   var proofs = c.preuves || [];
-  var notes = (c.journal || []).filter(function(j) { return j.type === 'note'; });
+  var notes = (c.journal || []).map(function(j, i) { return Object.assign({ _index: i }, j); }).filter(function(j) { return j.type === 'note'; });
   return [
     '<div class="workspace">',
       '<div class="workspace-head">',
@@ -485,7 +485,7 @@ function renderWorkspace(c) {
       '</div>',
       '<div class="wide-grid">',
         '<section class="panel section"><h2>Resume / description</h2><p class="text">' + esc(c.resume || c.description || 'Aucun resume renseigne.') + '</p></section>',
-        '<section class="panel section"><h2>Notes</h2><div class="note-list">' + (notes.length ? notes.map(noteHtml).join('') : '<div class="note-item">Aucune note.</div>') + '</div></section>',
+        '<section class="panel section"><h2>Notes</h2><div class="note-list">' + (notes.length ? notes.map(function(n) { return noteHtml(c, n); }).join('') : '<div class="note-item">Aucune note.</div>') + '</div></section>',
       '</div>',
     '</div>'
   ].join('');
@@ -495,7 +495,9 @@ function chip(label, value) { return '<div class="chip"><span>' + esc(label) + '
 function commandButton(icon, label, tone, action) {
   return '<button type="button" class="command-btn ' + esc(tone || 'neutral') + '" onclick="' + action + '"><i aria-hidden="true">' + icon + '</i><span>' + esc(label) + '</span></button>';
 }
-function noteHtml(n) { return '<div class="note-item"><strong>' + esc(n.date || '-') + '</strong>' + esc(n.texte || '') + '</div>'; }
+function noteHtml(c, n) {
+  return '<button type="button" class="note-item clickable-note" onclick="' + callAttr('openNoteModal', c.id, n._index) + '"><strong>' + esc(n.date || '-') + '</strong><span>' + esc(n.texte || '') + '</span></button>';
+}
 function peopleTable(c, people) {
   if (!people.length) return '<div class="text">Aucune personne liee.</div>';
   return '<table><tbody>' + people.map(function(p) {
@@ -903,14 +905,47 @@ function confirmDeleteEvidence(caseId, evidenceId) {
   renderApp();
 }
 
-function openNoteModal(caseId) {
-  openModal('Ajouter une note', '<form id="noteForm"><textarea name="note" rows="6" placeholder="Note CID..." required></textarea></form>', '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('saveNote', caseId) + '">Ajouter</button>');
+function openNoteModal(caseId, noteIndex) {
+  var c = caseGet(caseId);
+  var hasNote = noteIndex !== undefined && noteIndex !== null && String(noteIndex) !== '';
+  var index = hasNote ? Number(noteIndex) : -1;
+  var note = hasNote && c && c.journal ? c.journal[index] : null;
+  if (hasNote && (!note || note.type !== 'note')) {
+    openInfoModal('Note introuvable', 'Cette note n existe plus dans le dossier CID.');
+    return;
+  }
+  var body = '<form id="noteForm"><textarea name="note" rows="8" placeholder="Note CID..." required>' + esc(note && note.texte ? note.texte : '') + '</textarea></form>';
+  var actions = '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>' +
+    (hasNote ? '<button type="button" class="btn btn-red" onclick="' + callAttr('deleteNote', caseId, index) + '">Supprimer</button>' : '') +
+    '<button type="button" class="btn btn-gold" onclick="' + callAttr('saveNote', caseId, hasNote ? index : '') + '">' + (hasNote ? 'Sauvegarder' : 'Ajouter') + '</button>';
+  openModal(hasNote ? 'Modifier la note' : 'Ajouter une note', body, actions);
 }
-function saveNote(caseId) {
+function saveNote(caseId, noteIndex) {
   var c = caseGet(caseId);
   var txt = new FormData($('noteForm')).get('note');
   c.journal = c.journal || [];
-  c.journal.unshift({ date: nowLabel(), texte: txt, type: 'note' });
+  var hasNote = noteIndex !== undefined && noteIndex !== null && String(noteIndex) !== '';
+  var index = hasNote ? Number(noteIndex) : -1;
+  if (hasNote && c.journal[index] && c.journal[index].type === 'note') {
+    c.journal[index].texte = txt;
+    c.journal[index].updated_at = nowLabel();
+  } else {
+    c.journal.unshift({ id: uid('note'), date: nowLabel(), texte: txt, type: 'note' });
+  }
+  caseUpsert(c);
+  closeModal();
+  renderApp();
+}
+function deleteNote(caseId, noteIndex) {
+  openConfirmModal('Supprimer la note', 'Cette note sera retiree du dossier CID.', 'danger', callAttr('confirmDeleteNote', caseId, noteIndex));
+}
+function confirmDeleteNote(caseId, noteIndex) {
+  var c = caseGet(caseId);
+  if (!c) return;
+  var index = Number(noteIndex);
+  if (c.journal && c.journal[index] && c.journal[index].type === 'note') {
+    c.journal.splice(index, 1);
+  }
   caseUpsert(c);
   closeModal();
   renderApp();
