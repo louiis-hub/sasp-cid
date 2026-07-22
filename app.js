@@ -118,7 +118,7 @@ function renderLogin(message) {
   $('app').innerHTML = [
     '<main class="login-screen">',
       '<section class="login-card">',
-        '<img class="login-logo" src="assets/logo.webp" alt="SASP">',
+        '<img class="login-logo" src="assets/cid-logo.png" alt="CID">',
         '<div class="kicker">San Andreas State Police</div>',
         '<h1>SASP CID</h1>',
         '<p>Acces reserve aux enqueteurs CID et administrateurs.</p>',
@@ -158,16 +158,19 @@ function renderApp() {
   $('app').innerHTML = [
     '<div class="app-shell">',
       '<aside class="sidebar">',
-        '<div class="brand"><img src="assets/logo.webp" alt="SASP"><div><strong>SASP CID</strong><span>MDT enquete</span></div></div>',
+        '<div class="brand"><img src="assets/cid-logo.png" alt="CID"><div><strong>SASP CID</strong><span>Criminal Investigation</span></div></div>',
+        '<div class="profile-block"><span>Administrateur</span><strong>' + esc(userName) + '</strong><em>Acces CID</em></div>',
         '<nav class="nav">',
           '<div class="nav-title">Menu principal</div>',
-          navButton('dashboard', 'Tableau de bord'),
-          navButton('dossiers', 'Dossiers'),
-          navButton('personnes', 'Personnes'),
-          navButton('preuves', 'Preuves'),
-          navButton('archives', 'Archives'),
+          navButton('dashboard', 'Accueil', '⌂'),
+          '<div class="nav-group"><span>CID</span></div>',
+          navButton('dossiers', 'Dossiers', '▣'),
+          navButton('personnes', 'Personnes', '♙'),
+          navButton('preuves', 'Preuves', '◆'),
+          '<div class="nav-group"><span>Historique</span></div>',
+          navButton('archives', 'Archives', '▤'),
         '</nav>',
-        '<div class="sidebar-foot"><strong>' + esc(userName) + '</strong><br>Connecte Discord</div>',
+        '<div class="sidebar-foot"><strong>Discord</strong><br>Connecte et autorise</div>',
       '</aside>',
       '<main class="main">',
         '<header class="topbar">',
@@ -187,8 +190,8 @@ function renderApp() {
   renderContent();
 }
 
-function navButton(page, label) {
-  return '<button class="' + (STATE.route.page === page ? 'active' : '') + '" onclick="go(\'' + page + '\')">' + esc(label) + '</button>';
+function navButton(page, label, icon) {
+  return '<button class="' + (STATE.route.page === page ? 'active' : '') + '" onclick="go(\'' + page + '\')"><span class="nav-icon">' + esc(icon || '•') + '</span>' + esc(label) + '</button>';
 }
 function go(page, extra) {
   STATE.route = Object.assign({ page: page }, extra || {});
