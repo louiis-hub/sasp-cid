@@ -372,6 +372,22 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
 .modal h2 { margin: 0; font-size: 20px; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .form-grid > .full { grid-column: 1 / -1; }
+.field {
+  display: grid;
+  gap: 6px;
+}
+.field span {
+  color: #89a5c6;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+}
 .hidden { display: none !important; }
 
 .person-page {

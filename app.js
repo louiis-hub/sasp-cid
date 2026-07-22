@@ -395,18 +395,23 @@ function openCaseModal(id) {
   var c = id ? caseGet(id) : null;
   openModal(c ? 'Modifier le dossier' : 'Creer un dossier',
     '<form id="caseForm"><div class="form-grid">' +
-      '<input name="titre" placeholder="Titre de l\'enquete" value="' + esc(c && c.titre || '') + '" required>' +
-      '<select name="statut">' + options(STATUSES, c && c.statut || 'Ouvert') + '</select>' +
-      '<select name="priorite">' + options(PRIORITIES, c && c.priorite || 'Normale') + '</select>' +
-      '<select name="classification">' + options(CLASSIFICATIONS, c && c.classification || 'Autre') + '</select>' +
-      '<select name="confidentialite">' + options(CONFIDENTIALITIES, c && c.confidentialite || 'CID uniquement') + '</select>' +
-      '<input name="responsable" placeholder="Responsable" value="' + esc(c && c.responsable || displayName()) + '">' +
-      '<textarea class="full" name="resume" rows="3" placeholder="Resume rapide">' + esc(c && c.resume || '') + '</textarea>' +
-      '<textarea class="full" name="description" rows="6" placeholder="Description complete">' + esc(c && c.description || '') + '</textarea>' +
+      field('Titre de l\'enquete', '<input name="titre" placeholder="Nom du dossier / enquete" value="' + esc(c && c.titre || '') + '" required>') +
+      field('Statut du dossier', '<select name="statut">' + options(STATUSES, c && c.statut || 'Ouvert') + '</select>') +
+      field('Priorite', '<select name="priorite">' + options(PRIORITIES, c && c.priorite || 'Normale') + '</select>') +
+      field('Classification', '<select name="classification">' + options(CLASSIFICATIONS, c && c.classification || 'Autre') + '</select>') +
+      field('Confidentialite', '<select name="confidentialite">' + options(CONFIDENTIALITIES, c && c.confidentialite || 'CID uniquement') + '</select>') +
+      field('Responsable', '<input name="responsable" placeholder="Agent responsable" value="' + esc(c && c.responsable || displayName()) + '">') +
+      field('Resume rapide', '<textarea name="resume" rows="3" placeholder="Resume court du dossier">' + esc(c && c.resume || '') + '</textarea>', 'full') +
+      field('Description complete', '<textarea name="description" rows="6" placeholder="Faits, contexte, elements connus...">' + esc(c && c.description || '') + '</textarea>', 'full') +
     '</div></form>',
     '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="saveCase(' + js(id || '') + ')">Sauvegarder</button>'
   );
 }
+
+function field(label, control, extraClass) {
+  return '<label class="field ' + esc(extraClass || '') + '"><span>' + esc(label) + '</span>' + control + '</label>';
+}
+
 function saveCase(id) {
   var f = $('caseForm');
   var fd = new FormData(f);
