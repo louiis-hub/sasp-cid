@@ -10,6 +10,8 @@ var DISCORD_ROLE_MEMBER_CACHE = {};
 var STATE = {
   user: null,
   roles: [],
+  discordId: '',
+  displayName: '',
   route: { page: 'dashboard' },
   q: '',
   filter: 'Toutes'
@@ -109,6 +111,8 @@ async function logout() {
   await getDb().auth.signOut();
   STATE.user = null;
   STATE.roles = [];
+  STATE.discordId = '';
+  STATE.displayName = '';
   renderLogin();
 }
 
@@ -119,13 +123,16 @@ function workerUrl(path, params) {
 }
 
 async function loadDiscordRoles(user) {
-  var identity = user && user.identities && user.identities.find(function(i) { return i.provider === 'discord'; });
-  var discordId = identity && identity.identity_data && (identity.identity_data.provider_id || identity.identity_data.sub);
+  var discordId = getDiscordId(user);
   if (!discordId) return [];
   var res = await fetch(workerUrl('/auth/check-roles', { user_id: discordId }));
   if (!res.ok) return [];
   var data = await res.json();
   return data.roles || [];
+}
+function getDiscordId(user) {
+  var identity = user && user.identities && user.identities.find(function(i) { return i.provider === 'discord'; });
+  return identity && identity.identity_data && (identity.identity_data.provider_id || identity.identity_data.sub) || '';
 }
 
 function hasAccess() {
@@ -145,8 +152,10 @@ async function boot() {
     var session = redirect || (await getDb().auth.getSession()).data.session;
     if (!session) return renderLogin();
     STATE.user = session.user;
+    STATE.discordId = getDiscordId(session.user);
     STATE.roles = await loadDiscordRoles(session.user);
     if (!hasAccess()) return renderLogin('Acces refuse: role CID requis.');
+    STATE.displayName = await resolveServerDisplayName();
     renderApp();
   } catch (e) {
     renderLogin('Erreur retour Discord: ' + (e.message || e));
@@ -722,6 +731,23 @@ async function loadDiscordRoleMembers(roleId) {
   DISCORD_ROLE_MEMBER_CACHE[roleId] = data.agents || [];
   return DISCORD_ROLE_MEMBER_CACHE[roleId];
 }
+async function resolveServerDisplayName() {
+  if (!STATE.discordId) return displayNameFromOAuth();
+  var roleIds = []
+    .concat(typeof ROLE_AGENT_IDS !== 'undefined' ? ROLE_AGENT_IDS : [])
+    .concat(typeof ROLE_ADMIN_IDS !== 'undefined' ? ROLE_ADMIN_IDS : [])
+    .concat([EFFECTIVE_CID_ROLE_ID, CID_INVESTIGATOR_ROLE_ID])
+    .filter(Boolean)
+    .filter(function(roleId, index, list) { return list.indexOf(roleId) === index; });
+  try {
+    var res = await fetch(workerUrl('/discord/agents-roster', { guild_id: GUILD_ID, role_ids: roleIds.join(','), limit: 1000 }));
+    if (!res.ok) return displayNameFromOAuth();
+    var data = await res.json();
+    var member = (data.agents || []).find(function(a) { return String(a.discord_id) === String(STATE.discordId); });
+    if (member && (member.prenom || member.nom)) return cleanDiscordDisplayName((member.prenom || '') + ' ' + (member.nom || ''));
+  } catch (e) {}
+  return displayNameFromOAuth();
+}
 async function togglePersonFields() {
   var type = $('personType') && $('personType').value;
   var wrap = $('investigatorField');
@@ -1025,6 +1051,10 @@ function personName(c, id) {
   return p ? p.nom : '';
 }
 function displayName() {
+  if (STATE.displayName) return STATE.displayName;
+  return displayNameFromOAuth();
+}
+function displayNameFromOAuth() {
   var meta = STATE.user && STATE.user.user_metadata || {};
   var identity = STATE.user && STATE.user.identities && STATE.user.identities.find(function(i) { return i.provider === 'discord'; });
   var data = identity && identity.identity_data || {};
