@@ -359,6 +359,70 @@ textarea { resize: vertical; min-height: 96px; }
 .workspace h1 { margin: 4px 0 7px; font-size: 24px; }
 .subline { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 12px; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.case-command-bar {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid rgba(219, 181, 56, .22);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(219, 181, 56, .10), transparent 42%),
+    rgba(7, 10, 12, .72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .025);
+}
+.command-btn {
+  min-width: 72px;
+  border: 1px solid rgba(86, 128, 172, .35);
+  border-radius: 8px;
+  background: rgba(9, 18, 30, .64);
+  color: #dbeaff;
+  padding: 7px 9px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, transform .15s ease, background .15s ease;
+}
+.command-btn span {
+  display: block;
+  color: var(--gold);
+  font-size: 9px;
+  letter-spacing: .16em;
+  line-height: 1;
+}
+.command-btn strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.command-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(219, 181, 56, .58);
+  background: rgba(16, 31, 49, .88);
+}
+.command-btn.blue {
+  border-color: rgba(55, 127, 255, .55);
+  background: linear-gradient(135deg, rgba(26, 86, 214, .65), rgba(9, 18, 30, .7));
+}
+.command-btn.gold {
+  border-color: rgba(241, 202, 85, .75);
+  background: linear-gradient(135deg, rgba(219, 181, 56, .86), rgba(86, 64, 13, .45));
+  color: #fff8d6;
+}
+.command-btn.gold span { color: #110d04; }
+.command-btn.danger {
+  border-color: rgba(255, 67, 87, .55);
+  background: rgba(75, 14, 22, .38);
+  color: #ff9aa2;
+}
+.command-btn.danger span { color: #ff6570; }
+.command-divider {
+  width: 1px;
+  margin: 4px 3px;
+  background: rgba(219, 181, 56, .25);
+}
 .chip-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(130px, 1fr));
@@ -650,4 +714,7 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
   .dashboard-grid, .chip-grid, .form-grid, .gestion-grid { grid-template-columns: 1fr; }
   .workspace-head { grid-template-columns: 1fr; }
   .actions { justify-content: flex-start; }
+  .case-command-bar { justify-content: flex-start; flex-wrap: wrap; }
+  .command-btn { flex: 1 1 96px; }
+  .command-divider { display: none; }
 }
