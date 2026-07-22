@@ -755,8 +755,24 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
   gap: 12px;
 }
 .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
-.file-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: rgba(6,15,28,.7); }
+.file-card { position: relative; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: rgba(6,15,28,.7); }
 .file-card img, .file-card video { width: 100%; max-height: 180px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
+.file-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 1px solid rgba(255,87,107,.55);
+  border-radius: 6px;
+  background: rgba(80,15,24,.88);
+  color: #ff9aa8;
+  font: 800 10px/1 var(--font-title);
+  letter-spacing: .02em;
+  padding: 6px 8px;
+  cursor: pointer;
+  opacity: .18;
+}
+.file-card:hover .file-remove,
+.file-remove:focus { opacity: 1; }
 
 @media (max-width: 1100px) {
   .app-shell { grid-template-columns: 1fr; }

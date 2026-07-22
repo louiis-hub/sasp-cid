@@ -561,7 +561,10 @@ function personLinkMeta(p) {
 }
 function fileCard(c, p, f) {
   var media = attachmentHtml(f.attachment, functionName('previewPersonFile', c.id, p.id, f.id));
-  return '<article class="file-card">' + media + '<strong>' + esc(f.type || 'Fichier') + '</strong><br><small>' + esc(f.date || '-') + '</small><p class="text">' + esc(f.note || '') + '</p></article>';
+  return '<article class="file-card">' +
+    '<button type="button" class="file-remove" onclick="event.stopPropagation();' + callAttr('deletePersonFile', c.id, p.id, f.id) + '">Supprimer</button>' +
+    media +
+    '<strong>' + esc(f.type || 'Fichier') + '</strong><br><small>' + esc(f.date || '-') + '</small><p class="text">' + esc(f.note || '') + '</p></article>';
 }
 
 function renderPeopleIndex() {
@@ -828,7 +831,10 @@ function openEvidenceModal(caseId, evidenceId) {
       '<textarea class="full" name="description" rows="4" placeholder="Description / contexte">' + esc(e && e.description || '') + '</textarea>' +
       '<div id="evidenceError" class="form-error full"></div>' +
     '</div></form>',
-    '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>' + (e ? '<button type="button" class="btn btn-red" onclick="' + callAttr('deleteEvidence', caseId, evidenceId) + '">Supprimer</button>' : '') + '<button type="button" class="btn btn-gold" onclick="' + callAttr('saveEvidence', caseId, evidenceId || '') + '">' + (e ? 'Sauvegarder' : 'Ajouter') + '</button>'
+    '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>' +
+    (e && e.attachment ? '<button type="button" class="btn btn-red" onclick="' + callAttr('deleteEvidenceAttachment', caseId, evidenceId) + '">Retirer fichier</button>' : '') +
+    (e ? '<button type="button" class="btn btn-red" onclick="' + callAttr('deleteEvidence', caseId, evidenceId) + '">Supprimer</button>' : '') +
+    '<button type="button" class="btn btn-gold" onclick="' + callAttr('saveEvidence', caseId, evidenceId || '') + '">' + (e ? 'Sauvegarder' : 'Ajouter') + '</button>'
   );
   toggleEvidenceFields();
 }
@@ -935,6 +941,21 @@ async function saveEvidence(caseId, evidenceId) {
 function deleteEvidence(caseId, evidenceId) {
   openConfirmModal('Supprimer la preuve', 'Cette preuve sera retiree du dossier CID.', 'danger', callAttr('confirmDeleteEvidence', caseId, evidenceId));
 }
+function deleteEvidenceAttachment(caseId, evidenceId) {
+  openConfirmModal('Retirer le fichier', 'Le fichier joint sera retire de cette preuve. La preuve restera dans le dossier.', 'danger', callAttr('confirmDeleteEvidenceAttachment', caseId, evidenceId));
+}
+function confirmDeleteEvidenceAttachment(caseId, evidenceId) {
+  var c = caseGet(caseId);
+  if (!c) return;
+  var e = (c.preuves || []).find(function(x) { return x.id === evidenceId; });
+  if (!e) return;
+  e.attachment = null;
+  c.journal = c.journal || [];
+  c.journal.unshift({ date: nowLabel(), texte: 'Fichier retire de la preuve: ' + (e.scelle || '-'), type: 'system' });
+  caseUpsert(c);
+  closeModal();
+  renderApp();
+}
 function confirmDeleteEvidence(caseId, evidenceId) {
   var c = caseGet(caseId);
   if (!c) return;
@@ -1011,6 +1032,20 @@ async function savePersonFile(caseId, pid) {
   } catch (e) {
     setModalError('personFileError', e && e.name === 'QuotaExceededError' ? 'Stockage navigateur plein. Supprime quelques gros fichiers ou utilise une image plus legere.' : (e.message || 'Impossible d ajouter le fichier.'));
   }
+}
+
+function deletePersonFile(caseId, pid, fileId) {
+  openConfirmModal('Supprimer le fichier', 'Ce fichier sera retire de la fiche personne.', 'danger', callAttr('confirmDeletePersonFile', caseId, pid, fileId));
+}
+function confirmDeletePersonFile(caseId, pid, fileId) {
+  var c = caseGet(caseId);
+  if (!c) return;
+  var p = (c.personnes || []).find(function(x) { return x.id === pid; });
+  if (!p) return;
+  p.fichiers = (p.fichiers || []).filter(function(f) { return f.id !== fileId; });
+  caseUpsert(c);
+  closeModal();
+  renderApp();
 }
 
 function previewEvidence(caseId, evidenceId) {
