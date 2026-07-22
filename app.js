@@ -1,5 +1,6 @@
 var WORKER_BASE = 'https://sasp-intranet-bot.louisleurin.workers.dev';
 var CID_STORE_KEY = 'sasp_cid_cases_v2';
+var MAX_ATTACHMENT_BYTES = 1800000;
 var EFFECTIVE_CID_ROLE_ID = window.CID_ROLE_ID || '1518631634524569641';
 var CID_INVESTIGATOR_ROLE_ID = '1518631634524569641';
 var CID_DELETE_ROLE_ID = '1501526499910746132';
@@ -627,6 +628,7 @@ function openEvidenceModal(caseId) {
       '<div id="drugFields" class="form-grid full hidden"><input name="type_drogue" placeholder="Type de drogue"><input name="quantite" placeholder="Quantite"><select name="suspect_drogue">' + suspects + '</select></div>' +
       '<div id="vehicleFields" class="form-grid full hidden"><input name="modele" placeholder="Modele du vehicule"><input name="plaque" placeholder="Plaque"><select name="suspect_vehicule">' + suspects + '</select></div>' +
       '<textarea class="full" name="description" rows="4" placeholder="Description / contexte"></textarea>' +
+      '<div id="evidenceError" class="form-error full"></div>' +
     '</div></form>',
     '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('saveEvidence', caseId) + '">Ajouter</button>'
   );
@@ -640,34 +642,90 @@ function toggleEvidenceFields() {
   if (type === 'Vehicule') $('vehicleFields').classList.remove('hidden');
   $('fileField').classList.toggle('hidden', ['Photo','Document','ADN','Douille','Empreinte'].indexOf(type) === -1);
 }
+function setModalError(id, message) {
+  var box = $(id);
+  if (!box) {
+    alert(message);
+    return;
+  }
+  box.textContent = message || '';
+  box.classList.toggle('show', !!message);
+}
+function dataUrlBytes(dataUrl) {
+  var comma = String(dataUrl || '').indexOf(',');
+  var data = comma === -1 ? String(dataUrl || '') : String(dataUrl || '').slice(comma + 1);
+  return Math.ceil(data.length * 3 / 4);
+}
+function compressImageFile(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onerror = function() { reject(new Error('Lecture image impossible.')); };
+    reader.onload = function() {
+      var img = new Image();
+      img.onerror = function() { reject(new Error('Image illisible.')); };
+      img.onload = function() {
+        var maxSide = 1600;
+        var ratio = Math.min(1, maxSide / Math.max(img.width, img.height));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * ratio));
+        canvas.height = Math.max(1, Math.round(img.height * ratio));
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        var data = canvas.toDataURL('image/jpeg', 0.76);
+        resolve({ name: file.name.replace(/\.[^.]+$/, '') + '.jpg', type: 'image/jpeg', data: data });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 async function readFile(input) {
   var file = input && input.files && input.files[0];
   if (!file) return null;
+  if (String(file.type || '').indexOf('image/') === 0) {
+    var compressed = await compressImageFile(file);
+    if (dataUrlBytes(compressed.data) > MAX_ATTACHMENT_BYTES) {
+      throw new Error('Image trop lourde meme apres compression. Prends une capture plus petite.');
+    }
+    return compressed;
+  }
   return new Promise(function(resolve, reject) {
     var r = new FileReader();
-    r.onload = function() { resolve({ name: file.name, type: file.type, data: r.result }); };
+    r.onload = function() {
+      if (dataUrlBytes(r.result) > MAX_ATTACHMENT_BYTES) {
+        reject(new Error('Fichier trop lourd pour cette sauvegarde. Utilise une image compressee ou un fichier plus leger.'));
+        return;
+      }
+      resolve({ name: file.name, type: file.type, data: r.result });
+    };
     r.onerror = function() { reject(new Error('Lecture fichier impossible.')); };
     r.readAsDataURL(file);
   });
 }
 async function saveEvidence(caseId) {
-  var c = caseGet(caseId);
-  var f = $('evidenceForm');
-  var fd = new FormData(f);
-  var type = fd.get('type');
-  var details = {};
-  if (type === 'Arme') details = { type_arme: fd.get('type_arme') || '', numero_serie: fd.get('numero_serie') || '', suspect_id: fd.get('suspect_arme') || '' };
-  if (type === 'Drogue') details = { type_drogue: fd.get('type_drogue') || '', quantite: fd.get('quantite') || '', suspect_id: fd.get('suspect_drogue') || '' };
-  if (type === 'Vehicule') details = { modele: fd.get('modele') || '', plaque: fd.get('plaque') || '', suspect_id: fd.get('suspect_vehicule') || '' };
-  var seal = 'SC-' + new Date().getFullYear() + '-' + String((c.preuves || []).length + 1).padStart(4, '0');
-  var attachment = await readFile(f.querySelector('input[type=file]'));
-  c.preuves = c.preuves || [];
-  c.preuves.push({ id: uid('evidence'), scelle: seal, type: type, description: fd.get('description') || '', details: details, attachment: attachment, date: nowLabel() });
-  c.journal = c.journal || [];
-  c.journal.unshift({ date: nowLabel(), texte: 'Preuve ajoutee: ' + seal, type: 'system' });
-  caseUpsert(c);
-  closeModal();
-  renderApp();
+  try {
+    setModalError('evidenceError', '');
+    var c = caseGet(caseId);
+    if (!c) throw new Error('Dossier introuvable.');
+    var f = $('evidenceForm');
+    var fd = new FormData(f);
+    var type = fd.get('type');
+    var details = {};
+    if (type === 'Arme') details = { type_arme: fd.get('type_arme') || '', numero_serie: fd.get('numero_serie') || '', suspect_id: fd.get('suspect_arme') || '' };
+    if (type === 'Drogue') details = { type_drogue: fd.get('type_drogue') || '', quantite: fd.get('quantite') || '', suspect_id: fd.get('suspect_drogue') || '' };
+    if (type === 'Vehicule') details = { modele: fd.get('modele') || '', plaque: fd.get('plaque') || '', suspect_id: fd.get('suspect_vehicule') || '' };
+    var seal = 'SC-' + new Date().getFullYear() + '-' + String((c.preuves || []).length + 1).padStart(4, '0');
+    var attachment = await readFile(f.querySelector('input[type=file]'));
+    c.preuves = c.preuves || [];
+    c.preuves.push({ id: uid('evidence'), scelle: seal, type: type, description: fd.get('description') || '', details: details, attachment: attachment, date: nowLabel() });
+    c.journal = c.journal || [];
+    c.journal.unshift({ date: nowLabel(), texte: 'Preuve ajoutee: ' + seal, type: 'system' });
+    caseUpsert(c);
+    closeModal();
+    renderApp();
+  } catch (e) {
+    setModalError('evidenceError', e && e.name === 'QuotaExceededError' ? 'Stockage navigateur plein. Supprime quelques grosses preuves ou utilise une image plus legere.' : (e.message || 'Impossible d ajouter la preuve.'));
+  }
 }
 
 function openNoteModal(caseId) {
@@ -684,19 +742,26 @@ function saveNote(caseId) {
 }
 
 function openPersonFileModal(caseId, pid) {
-  openModal('Ajouter un fichier personne', '<form id="personFileForm"><div class="form-grid"><select name="type">' + options(['Photo','Video','Audio','Document','Autre'], 'Photo') + '</select><input name="fichier" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" required><textarea class="full" name="note" rows="3" placeholder="Note"></textarea></div></form>', '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('savePersonFile', caseId, pid) + '">Ajouter</button>');
+  openModal('Ajouter un fichier personne', '<form id="personFileForm"><div class="form-grid"><select name="type">' + options(['Photo','Video','Audio','Document','Autre'], 'Photo') + '</select><input name="fichier" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" required><textarea class="full" name="note" rows="3" placeholder="Note"></textarea><div id="personFileError" class="form-error full"></div></div></form>', '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('savePersonFile', caseId, pid) + '">Ajouter</button>');
 }
 async function savePersonFile(caseId, pid) {
-  var c = caseGet(caseId);
-  var p = c.personnes.find(function(x) { return x.id === pid; });
-  var f = $('personFileForm');
-  var fd = new FormData(f);
-  var attachment = await readFile(f.querySelector('input[type=file]'));
-  p.fichiers = p.fichiers || [];
-  p.fichiers.push({ id: uid('file'), type: fd.get('type'), note: fd.get('note') || '', attachment: attachment, date: nowLabel() });
-  caseUpsert(c);
-  closeModal();
-  renderApp();
+  try {
+    setModalError('personFileError', '');
+    var c = caseGet(caseId);
+    if (!c) throw new Error('Dossier introuvable.');
+    var p = c.personnes.find(function(x) { return x.id === pid; });
+    if (!p) throw new Error('Personne introuvable.');
+    var f = $('personFileForm');
+    var fd = new FormData(f);
+    var attachment = await readFile(f.querySelector('input[type=file]'));
+    p.fichiers = p.fichiers || [];
+    p.fichiers.push({ id: uid('file'), type: fd.get('type'), note: fd.get('note') || '', attachment: attachment, date: nowLabel() });
+    caseUpsert(c);
+    closeModal();
+    renderApp();
+  } catch (e) {
+    setModalError('personFileError', e && e.name === 'QuotaExceededError' ? 'Stockage navigateur plein. Supprime quelques gros fichiers ou utilise une image plus legere.' : (e.message || 'Impossible d ajouter le fichier.'));
+  }
 }
 
 function previewEvidence(caseId, evidenceId) {

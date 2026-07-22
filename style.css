@@ -442,6 +442,18 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
 .field textarea {
   width: 100%;
 }
+.form-error {
+  display: none;
+  border: 1px solid rgba(255, 77, 77, .5);
+  border-radius: 8px;
+  background: rgba(84, 19, 28, .6);
+  color: #ff6969;
+  padding: 10px 12px;
+  font-weight: 800;
+}
+.form-error.show {
+  display: block;
+}
 .gestion-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
