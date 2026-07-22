@@ -221,11 +221,11 @@ function exampleCase(list) {
     date_ouverture: opened,
     updated_at: opened,
     personnes: [
-      { id: suspect1, nom: 'Marcus Velasquez', type: 'Suspect', tel: '555-1842', commentaires: 'Conducteur presume. Porte une veste noire, tatouage cou droit. A relier au vehicule Sultan RS.', fichiers: [] },
-      { id: suspect2, nom: 'Darnell Johnson', type: 'Suspect', tel: '555-5591', commentaires: 'Suspect arme vu cote coffre. Possiblement en lien avec une saisie Glock.', fichiers: [] },
-      { id: victim, nom: 'Lena Brooks', type: 'Victime', tel: '555-7204', commentaires: 'Employee Fleeca. Declare avoir ete maintenue sous menace pendant environ 12 minutes.', fichiers: [] },
-      { id: witness, nom: 'Evan Carter', type: 'Temoin', tel: '555-3380', commentaires: 'Temoin civil. A vu le Sultan RS quitter la zone par l est.', fichiers: [] },
-      { id: investigator, nom: displayName(), type: 'Enqueteur', tel: '555-0000', commentaires: 'Responsable CID du dossier exemple.', fichiers: [] }
+      { id: suspect1, nom: 'Marcus Velasquez', type: 'Suspect', tel: '555-1842', rapport_mdt: '#MDT-8842', rapport_event_url: 'https://discord.com/channels/1500975724750704661/1518674483060281454/1529900011111111111', commentaires: 'Conducteur presume. Porte une veste noire, tatouage cou droit. A relier au vehicule Sultan RS.', fichiers: [] },
+      { id: suspect2, nom: 'Darnell Johnson', type: 'Suspect', tel: '555-5591', rapport_mdt: '#MDT-8843', rapport_event_url: 'https://discord.com/channels/1500975724750704661/1518674483060281454/1529900022222222222', commentaires: 'Suspect arme vu cote coffre. Possiblement en lien avec une saisie Glock.', fichiers: [] },
+      { id: victim, nom: 'Lena Brooks', type: 'Victime', tel: '555-7204', rapport_mdt: '#MDT-8842', rapport_event_url: '', commentaires: 'Employee Fleeca. Declare avoir ete maintenue sous menace pendant environ 12 minutes.', fichiers: [] },
+      { id: witness, nom: 'Evan Carter', type: 'Temoin', tel: '555-3380', rapport_mdt: '#MDT-8842', rapport_event_url: '', commentaires: 'Temoin civil. A vu le Sultan RS quitter la zone par l est.', fichiers: [] },
+      { id: investigator, nom: displayName(), type: 'Enqueteur', tel: '555-0000', rapport_mdt: '#MDT-8842', rapport_event_url: '', commentaires: 'Responsable CID du dossier exemple.', fichiers: [] }
     ],
     preuves: [
       { id: 'demo_e_weapon', scelle: 'SC-2026-0001', type: 'Arme', description: 'Arme recuperee apres interpellation.', details: { type_arme: 'Glock 19', numero_serie: 'G19-VWD-7742', suspect_id: suspect2 }, attachment: null, date: '2026-07-22 18:31' },
@@ -296,7 +296,7 @@ function allFiltered(includeArchived) {
   return casesLoad().filter(function(c) {
     if (!includeArchived && /classe|ferme/i.test(c.statut || '')) return false;
     if (STATE.filter !== 'Toutes' && c.statut !== STATE.filter) return false;
-    var people = (c.personnes || []).map(function(p) { return [p.nom, p.tel, p.type].join(' '); }).join(' ');
+    var people = (c.personnes || []).map(function(p) { return [p.nom, p.tel, p.type, p.rapport_mdt, p.rapport_event_url].join(' '); }).join(' ');
     var proofs = (c.preuves || []).map(function(e) { return [e.scelle, e.type, e.description, proofDetailsText(c, e)].join(' '); }).join(' ');
     return [c.numero, c.titre, c.statut, c.priorite, c.classification, c.resume, people, proofs].join(' ').toLowerCase().indexOf(q) !== -1;
   }).sort(function(a, b) { return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); });
@@ -330,8 +330,8 @@ function renderSearchResults() {
         results.push({ type: 'Dossier', title: (c.numero || '-') + ' - ' + (c.titre || 'Dossier sans titre'), meta: searchContext([c.resume, c.description, c.statut, c.priorite, c.classification], q), action: callAttr('openSearchResult', 'dossiers', { id: c.id }) });
       }
       (c.personnes || []).forEach(function(p) {
-        if (matchText([p.nom, p.type, p.tel, p.discord_id, p.commentaires].join(' '), q)) {
-          results.push({ type: 'Personne', title: p.nom || 'Personne sans nom', meta: (c.numero || '-') + ' - ' + searchContext([p.type, p.tel, p.commentaires], q), action: callAttr('openSearchResult', 'dossiers', { id: c.id, person: p.id }) });
+        if (matchText([p.nom, p.type, p.tel, p.discord_id, p.rapport_mdt, p.rapport_event_url, p.commentaires].join(' '), q)) {
+          results.push({ type: 'Personne', title: p.nom || 'Personne sans nom', meta: (c.numero || '-') + ' - ' + searchContext([p.type, p.tel, p.rapport_mdt, p.rapport_event_url, p.commentaires], q), action: callAttr('openSearchResult', 'dossiers', { id: c.id, person: p.id }) });
         }
         (p.fichiers || []).forEach(function(f) {
           if (matchText([f.type, f.note, f.attachment && f.attachment.name].join(' '), q)) {
@@ -516,7 +516,7 @@ function renderPersonWorkspace(c, pid) {
   return [
     '<div class="workspace person-page">',
       '<div class="workspace-head">',
-        '<div><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">Retour au dossier</button><div class="case-id" style="margin-top:12px">' + esc(c.numero) + ' - Fiche personne</div><h1>' + esc(p.nom) + '</h1><div class="subline"><span>' + esc(p.type || '-') + '</span><span>' + esc(p.tel || '-') + '</span></div></div>',
+        '<div><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">Retour au dossier</button><div class="case-id" style="margin-top:12px">' + esc(c.numero) + ' - Fiche personne</div><h1>' + esc(p.nom) + '</h1><div class="subline"><span>' + esc(p.type || '-') + '</span><span>' + esc(p.tel || '-') + '</span>' + personLinkMeta(p) + '</div></div>',
         '<div class="actions"><button class="btn btn-gold btn-small" onclick="' + callAttr('openPersonFileModal', c.id, p.id) + '">Ajouter fichier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deletePerson', c.id, p.id) + '">Supprimer</button></div>',
       '</div>',
       '<div class="detail-grid">',
@@ -527,7 +527,13 @@ function renderPersonWorkspace(c, pid) {
   ].join('');
 }
 function personEditForm(c, p) {
-  return '<form id="personEditForm" class="person-edit-form" onsubmit="event.preventDefault();' + callAttr('savePersonProfile', c.id, p.id) + '"><div class="form-grid"><input name="nom" value="' + esc(p.nom) + '" placeholder="Nom / prenom"><select name="type">' + options(PERSON_TYPES, p.type || 'Citoyen') + '</select><input name="tel" value="' + esc(p.tel || '') + '" placeholder="Telephone"></div><textarea name="commentaires" rows="10" placeholder="Notes, habitudes, signalement, liens...">' + esc(p.commentaires || '') + '</textarea><button class="btn btn-blue btn-small">Sauvegarder</button></form>';
+  return '<form id="personEditForm" class="person-edit-form" onsubmit="event.preventDefault();' + callAttr('savePersonProfile', c.id, p.id) + '"><div class="form-grid"><input name="nom" value="' + esc(p.nom) + '" placeholder="Nom / prenom"><select name="type">' + options(PERSON_TYPES, p.type || 'Citoyen') + '</select><input name="tel" value="' + esc(p.tel || '') + '" placeholder="Telephone"><input name="rapport_mdt" value="' + esc(p.rapport_mdt || '') + '" placeholder="Rapport MDT #"><input class="full" name="rapport_event_url" value="' + esc(p.rapport_event_url || '') + '" placeholder="Lien rapport evenement Discord"></div><textarea name="commentaires" rows="10" placeholder="Notes, habitudes, signalement, liens...">' + esc(p.commentaires || '') + '</textarea><button class="btn btn-blue btn-small">Sauvegarder</button></form>';
+}
+function personLinkMeta(p) {
+  var items = [];
+  if (p.rapport_mdt) items.push('<span>Rapport MDT ' + esc(p.rapport_mdt) + '</span>');
+  if (p.rapport_event_url) items.push('<a class="inline-link" href="' + esc(p.rapport_event_url) + '" target="_blank" rel="noopener">Rapport evenement</a>');
+  return items.join('');
 }
 function fileCard(c, p, f) {
   var media = attachmentHtml(f.attachment, functionName('previewPersonFile', c.id, p.id, f.id));
@@ -537,7 +543,7 @@ function fileCard(c, p, f) {
 function renderPeopleIndex() {
   var rows = [];
   casesLoad().forEach(function(c) { (c.personnes || []).forEach(function(p) { rows.push({ c: c, p: p }); }); });
-  $('content').innerHTML = '<section class="panel section"><h2>Personnes CID</h2><table><thead><tr><th>Nom</th><th>Type</th><th>Telephone</th><th>Dossier</th></tr></thead><tbody>' + (rows.length ? rows.map(function(r) { return '<tr class="clickable" onclick="' + callAttr('go', 'dossiers', { id: r.c.id, person: r.p.id }) + '"><td><strong>' + esc(r.p.nom) + '</strong></td><td>' + badge(r.p.type, 'blue') + '</td><td>' + esc(r.p.tel || '-') + '</td><td>' + esc(r.c.numero) + ' - ' + esc(r.c.titre) + '</td></tr>'; }).join('') : '<tr><td colspan="4">Aucune personne.</td></tr>') + '</tbody></table></section>';
+  $('content').innerHTML = '<section class="panel section"><h2>Personnes CID</h2><table><thead><tr><th>Nom</th><th>Type</th><th>Telephone</th><th>Rapport MDT</th><th>Rapport evenement</th><th>Dossier</th></tr></thead><tbody>' + (rows.length ? rows.map(function(r) { return '<tr class="clickable" onclick="' + callAttr('go', 'dossiers', { id: r.c.id, person: r.p.id }) + '"><td><strong>' + esc(r.p.nom) + '</strong></td><td>' + badge(r.p.type, 'blue') + '</td><td>' + esc(r.p.tel || '-') + '</td><td>' + esc(r.p.rapport_mdt || '-') + '</td><td>' + (r.p.rapport_event_url ? '<a class="inline-link" href="' + esc(r.p.rapport_event_url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ouvrir</a>' : '-') + '</td><td>' + esc(r.c.numero) + ' - ' + esc(r.c.titre) + '</td></tr>'; }).join('') : '<tr><td colspan="6">Aucune personne.</td></tr>') + '</tbody></table></section>';
 }
 function renderEvidenceIndex() {
   var rows = [];
@@ -685,6 +691,8 @@ function openPersonModal(caseId) {
       '<select id="personType" name="type" onchange="togglePersonFields()">' + options(PERSON_TYPES, 'Suspect') + '</select>' +
       '<div id="investigatorField" class="full hidden"><select id="investigatorSelect" name="discord_id" onchange="fillInvestigatorFromSelect()"><option value="">Chargement des enqueteurs CID...</option></select></div>' +
       '<input name="tel" placeholder="555-1234">' +
+      '<input name="rapport_mdt" placeholder="Rapport MDT #">' +
+      '<input class="full" name="rapport_event_url" placeholder="Lien rapport evenement Discord">' +
       '<textarea class="full" name="commentaires" rows="4" placeholder="Commentaires CID"></textarea>' +
     '</div></form>',
     '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('savePerson', caseId) + '">Ajouter</button>'
@@ -728,7 +736,7 @@ function savePerson(caseId) {
   var form = $('personForm');
   if (!form || !form.reportValidity()) return;
   var fd = new FormData($('personForm'));
-  var p = { id: uid('person'), nom: fd.get('nom'), type: fd.get('type'), tel: fd.get('tel') || '', discord_id: fd.get('discord_id') || '', commentaires: fd.get('commentaires') || '', fichiers: [] };
+  var p = { id: uid('person'), nom: fd.get('nom'), type: fd.get('type'), tel: fd.get('tel') || '', discord_id: fd.get('discord_id') || '', rapport_mdt: fd.get('rapport_mdt') || '', rapport_event_url: fd.get('rapport_event_url') || '', commentaires: fd.get('commentaires') || '', fichiers: [] };
   c.personnes = c.personnes || [];
   c.personnes.push(p);
   c.journal = c.journal || [];
@@ -745,6 +753,8 @@ function savePersonProfile(caseId, pid) {
   p.nom = fd.get('nom') || p.nom;
   p.type = fd.get('type') || p.type;
   p.tel = fd.get('tel') || '';
+  p.rapport_mdt = fd.get('rapport_mdt') || '';
+  p.rapport_event_url = fd.get('rapport_event_url') || '';
   p.commentaires = fd.get('commentaires') || '';
   caseUpsert(c);
   renderApp();

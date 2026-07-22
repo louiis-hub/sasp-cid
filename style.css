@@ -358,6 +358,12 @@ textarea { resize: vertical; min-height: 96px; }
 .case-id { color: #8eb5e4; font-size: 12px; }
 .workspace h1 { margin: 4px 0 7px; font-size: 24px; }
 .subline { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 12px; }
+.inline-link {
+  color: #75b4ff;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(117, 180, 255, .35);
+}
+.inline-link:hover { color: #ffffff; border-bottom-color: var(--gold); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .case-command-bar {
   display: flex;
