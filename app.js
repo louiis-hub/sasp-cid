@@ -487,6 +487,21 @@ function openModal(title, body, footer) {
   $('modalRoot').classList.add('show');
 }
 function closeModal() { $('modalRoot').classList.remove('show'); $('modalRoot').innerHTML = ''; }
+function openConfirmModal(title, message, tone, action) {
+  openModal(title,
+    '<div class="confirm-box ' + esc(tone || '') + '">' +
+      '<div class="confirm-icon">' + (tone === 'danger' ? '!' : 'i') + '</div>' +
+      '<div><strong>' + esc(title) + '</strong><p>' + esc(message) + '</p></div>' +
+    '</div>',
+    '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn ' + (tone === 'danger' ? 'btn-red' : 'btn-gold') + '" onclick="' + action + '">Confirmer</button>'
+  );
+}
+function openInfoModal(title, message) {
+  openModal(title,
+    '<div class="confirm-box"><div class="confirm-icon">i</div><div><strong>' + esc(title) + '</strong><p>' + esc(message) + '</p></div></div>',
+    '<button type="button" class="btn btn-gold" onclick="closeModal()">OK</button>'
+  );
+}
 
 function openCaseModal(id) {
   var c = id ? caseGet(id) : null;
@@ -609,11 +624,14 @@ function savePersonProfile(caseId, pid) {
   renderApp();
 }
 function deletePerson(caseId, pid) {
-  if (!confirm('Supprimer cette personne du dossier ?')) return;
+  openConfirmModal('Supprimer la personne', 'Cette personne sera retiree du dossier CID. Les informations liees a cette fiche ne seront plus visibles.', 'danger', callAttr('confirmDeletePerson', caseId, pid));
+}
+function confirmDeletePerson(caseId, pid) {
   var c = caseGet(caseId);
   c.personnes = (c.personnes || []).filter(function(p) { return p.id !== pid; });
   caseUpsert(c);
   STATE.route = { page: 'dossiers', id: caseId };
+  closeModal();
   renderApp();
 }
 
@@ -645,7 +663,7 @@ function toggleEvidenceFields() {
 function setModalError(id, message) {
   var box = $(id);
   if (!box) {
-    alert(message);
+    if ($('modalRoot')) openInfoModal('Erreur', message);
     return;
   }
   box.textContent = message || '';
@@ -807,19 +825,27 @@ function displayName() {
 function archiveCase(id) {
   var c = caseGet(id);
   if (!c) return;
-  if (!confirm('Archiver ce dossier CID ?')) return;
+  openConfirmModal('Archiver le dossier', 'Le dossier passera dans les archives CID. Il restera consultable depuis la page Archives.', 'warning', callAttr('confirmArchiveCase', id));
+}
+function confirmArchiveCase(id) {
+  var c = caseGet(id);
+  if (!c) return;
   c.statut = 'Classe';
   caseUpsert(c);
+  closeModal();
   renderApp();
 }
 function deleteCase(id) {
   if (!canDeleteCases()) {
-    alert('Acces refuse: seul le role autorise ou les administrateurs peuvent supprimer un dossier CID.');
+    openInfoModal('Acces refuse', 'Seul le role autorise ou les administrateurs peuvent supprimer un dossier CID.');
     return;
   }
-  if (!confirm('Supprimer definitivement ce dossier CID ?')) return;
+  openConfirmModal('Supprimer le dossier', 'Cette action est definitive. Le dossier CID, ses personnes, notes et preuves locales seront supprimes.', 'danger', callAttr('confirmDeleteCase', id));
+}
+function confirmDeleteCase(id) {
   casesSave(casesLoad().filter(function(c) { return c.id !== id; }));
   STATE.route = { page: 'dossiers' };
+  closeModal();
   renderApp();
 }
 

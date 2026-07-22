@@ -454,6 +454,48 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
 .form-error.show {
   display: block;
 }
+.confirm-box {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  border: 1px solid rgba(216,182,71,.22);
+  border-radius: 10px;
+  background: radial-gradient(circle at top left, rgba(216,182,71,.12), rgba(5,13,25,.78) 45%);
+  padding: 16px;
+}
+.confirm-box.danger {
+  border-color: rgba(255, 77, 77, .42);
+  background: radial-gradient(circle at top left, rgba(255,77,77,.14), rgba(5,13,25,.78) 45%);
+}
+.confirm-box.warning {
+  border-color: rgba(216,182,71,.42);
+}
+.confirm-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(216,182,71,.45);
+  border-radius: 999px;
+  color: #d8b647;
+  font-weight: 900;
+}
+.confirm-box.danger .confirm-icon {
+  border-color: rgba(255,77,77,.55);
+  color: #ff6969;
+}
+.confirm-box strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 16px;
+}
+.confirm-box p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
 .gestion-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
