@@ -210,7 +210,7 @@ function exampleCase(list) {
   return {
     id: 'cid_demo_complete',
     numero: nextNumber(list || []),
-    titre: 'Braquage organise - Fleeca Vinewood',
+    titre: '[EXEMPLE] Braquage organise - Fleeca Vinewood',
     statut: 'Ouvert',
     priorite: 'Critique',
     classification: 'Braquage',
@@ -401,7 +401,7 @@ function recentCasesPanel(list) {
   var recent = list.slice().sort(function(a, b) { return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); }).slice(0, 5);
   if (!recent.length) return '<div class="small-empty">Aucun dossier CID pour le moment.</div>';
   return '<div class="mini-list">' + recent.map(function(c) {
-    return '<button class="mini-row" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '"><span>' + esc(c.numero) + '</span><strong>' + esc(c.titre || 'Dossier sans titre') + '</strong>' + statusBadge(c.statut) + '</button>';
+    return '<button class="mini-row" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '"><span>' + esc(c.numero) + '</span><strong>' + caseTitleHtml(c) + '</strong>' + statusBadge(c.statut) + '</button>';
   }).join('') + '</div>';
 }
 
@@ -447,7 +447,7 @@ function caseListItem(c, activeId) {
   return [
     '<article class="case-item ' + (c.id === activeId ? 'active' : '') + '" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">',
       '<div class="case-top"><span>' + esc(c.numero) + '</span>' + priorityBadge(c.priorite) + '</div>',
-      '<div class="case-name">' + esc(c.titre || 'Dossier sans titre') + '</div>',
+      '<div class="case-name">' + caseTitleHtml(c) + '</div>',
       '<div class="case-meta"><span>' + esc(c.responsable || 'CID') + '</span><span>' + esc(c.updated_at || '-') + '</span></div>',
     '</article>'
   ].join('');
@@ -462,7 +462,7 @@ function renderWorkspace(c) {
   return [
     '<div class="workspace">',
       '<div class="workspace-head">',
-        '<div><div class="case-id">' + esc(c.numero) + '</div><h1>' + esc(c.titre) + '</h1><div class="subline"><span>Ouvert le ' + esc(c.date_ouverture) + '</span><span>Derniere modif. ' + esc(c.updated_at) + '</span><span>Par ' + esc(c.responsable || 'CID') + '</span></div></div>',
+        '<div><div class="case-id">' + esc(c.numero) + (isExampleCase(c) ? ' ' + badge('EXEMPLE', 'gold') : '') + '</div><h1>' + caseTitleHtml(c) + '</h1><div class="subline"><span>Ouvert le ' + esc(c.date_ouverture) + '</span><span>Derniere modif. ' + esc(c.updated_at) + '</span><span>Par ' + esc(c.responsable || 'CID') + '</span></div></div>',
         '<div class="case-command-bar">' +
           commandButton('&#9998;', 'Modifier', 'neutral', callAttr('openCaseModal', c.id)) +
           addMenu(c) +
@@ -492,6 +492,14 @@ function renderWorkspace(c) {
 function chip(label, value) { return '<div class="chip"><span>' + esc(label) + '</span><strong>' + value + '</strong></div>'; }
 function commandButton(icon, label, tone, action) {
   return '<button type="button" class="command-btn ' + esc(tone || 'neutral') + '" onclick="' + action + '"><i aria-hidden="true">' + icon + '</i><span>' + esc(label) + '</span></button>';
+}
+function isExampleCase(c) {
+  return !!c && (c.id === 'cid_demo_complete' || /^\[EXEMPLE\]/i.test(c.titre || ''));
+}
+function caseTitleHtml(c) {
+  var title = c && c.titre || 'Dossier sans titre';
+  var clean = title.replace(/^\[EXEMPLE\]\s*/i, '');
+  return (isExampleCase(c) ? '<span class="example-label">EXEMPLE</span> ' : '') + esc(clean);
 }
 function addMenu(c) {
   return '<details class="add-menu"><summary class="command-btn gold"><i aria-hidden="true">&#43;</i><span>Ajout</span></summary><div class="add-menu-panel">' +
