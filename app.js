@@ -464,13 +464,13 @@ function renderWorkspace(c) {
       '<div class="workspace-head">',
         '<div><div class="case-id">' + esc(c.numero) + '</div><h1>' + esc(c.titre) + '</h1><div class="subline"><span>Ouvert le ' + esc(c.date_ouverture) + '</span><span>Derniere modif. ' + esc(c.updated_at) + '</span><span>Par ' + esc(c.responsable || 'CID') + '</span></div></div>',
         '<div class="case-command-bar">' +
-          commandButton('EDIT', 'Modifier', 'neutral', callAttr('openCaseModal', c.id)) +
-          commandButton('NOTE', 'Note', 'neutral', callAttr('openNoteModal', c.id)) +
-          commandButton('PERS', 'Personne', 'blue', callAttr('openPersonModal', c.id)) +
-          commandButton('SCELLE', 'Preuve', 'gold', callAttr('openEvidenceModal', c.id)) +
+          commandButton('&#9998;', 'Modifier', 'neutral', callAttr('openCaseModal', c.id)) +
+          commandButton('&#43;', 'Note', 'neutral', callAttr('openNoteModal', c.id)) +
+          commandButton('&#9671;', 'Personne', 'blue', callAttr('openPersonModal', c.id)) +
+          commandButton('&#9670;', 'Preuve', 'gold', callAttr('openEvidenceModal', c.id)) +
           '<span class="command-divider"></span>' +
-          commandButton('ARCH', 'Archiver', 'neutral', callAttr('archiveCase', c.id)) +
-          (canDeleteCases() ? commandButton('DEL', 'Supprimer', 'danger', callAttr('deleteCase', c.id)) : '') +
+          commandButton('&#9635;', 'Archiver', 'neutral', callAttr('archiveCase', c.id)) +
+          (canDeleteCases() ? commandButton('&#10005;', 'Supprimer', 'danger', callAttr('deleteCase', c.id)) : '') +
         '</div>',
       '</div>',
       '<div class="chip-grid">',
@@ -492,8 +492,8 @@ function renderWorkspace(c) {
 }
 
 function chip(label, value) { return '<div class="chip"><span>' + esc(label) + '</span><strong>' + value + '</strong></div>'; }
-function commandButton(code, label, tone, action) {
-  return '<button type="button" class="command-btn ' + esc(tone || 'neutral') + '" onclick="' + action + '"><span>' + esc(code) + '</span><strong>' + esc(label) + '</strong></button>';
+function commandButton(icon, label, tone, action) {
+  return '<button type="button" class="command-btn ' + esc(tone || 'neutral') + '" onclick="' + action + '"><i aria-hidden="true">' + icon + '</i><span>' + esc(label) + '</span></button>';
 }
 function noteHtml(n) { return '<div class="note-item"><strong>' + esc(n.date || '-') + '</strong>' + esc(n.texte || '') + '</div>'; }
 function peopleTable(c, people) {

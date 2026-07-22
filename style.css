@@ -361,67 +361,72 @@ textarea { resize: vertical; min-height: 96px; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .case-command-bar {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: flex-end;
-  gap: 5px;
-  padding: 5px;
-  border: 1px solid rgba(219, 181, 56, .22);
-  border-radius: 10px;
-  background:
-    linear-gradient(135deg, rgba(219, 181, 56, .10), transparent 42%),
-    rgba(7, 10, 12, .72);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .025);
+  gap: 7px;
+  padding: 0;
+  background: transparent;
 }
 .command-btn {
-  min-width: 72px;
-  border: 1px solid rgba(86, 128, 172, .35);
-  border-radius: 8px;
-  background: rgba(9, 18, 30, .64);
-  color: #dbeaff;
-  padding: 7px 9px;
-  text-align: left;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 34px;
+  border: 1px solid rgba(86, 128, 172, .30);
+  border-radius: 999px;
+  background: rgba(7, 14, 23, .72);
+  color: #cfe2fa;
+  padding: 0 12px 0 8px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  transition: border-color .15s ease, transform .15s ease, background .15s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+  transition: border-color .15s ease, transform .15s ease, background .15s ease, color .15s ease;
+}
+.command-btn i {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(219, 181, 56, .28);
+  background: rgba(219, 181, 56, .08);
+  color: var(--gold);
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1;
 }
 .command-btn span {
-  display: block;
-  color: var(--gold);
-  font-size: 9px;
-  letter-spacing: .16em;
-  line-height: 1;
-}
-.command-btn strong {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  line-height: 1;
+  display: inline-block;
   white-space: nowrap;
 }
 .command-btn:hover {
   transform: translateY(-1px);
-  border-color: rgba(219, 181, 56, .58);
-  background: rgba(16, 31, 49, .88);
+  border-color: rgba(137, 178, 223, .55);
+  background: rgba(13, 25, 40, .90);
+  color: #ffffff;
 }
 .command-btn.blue {
-  border-color: rgba(55, 127, 255, .55);
-  background: linear-gradient(135deg, rgba(26, 86, 214, .65), rgba(9, 18, 30, .7));
+  border-color: rgba(61, 132, 255, .46);
+  color: #dcebff;
 }
 .command-btn.gold {
-  border-color: rgba(241, 202, 85, .75);
-  background: linear-gradient(135deg, rgba(219, 181, 56, .86), rgba(86, 64, 13, .45));
-  color: #fff8d6;
+  border-color: rgba(241, 202, 85, .58);
+  color: #ffe493;
 }
-.command-btn.gold span { color: #110d04; }
+.command-btn.gold i { background: rgba(219, 181, 56, .18); border-color: rgba(241, 202, 85, .48); }
 .command-btn.danger {
-  border-color: rgba(255, 67, 87, .55);
-  background: rgba(75, 14, 22, .38);
+  border-color: rgba(255, 67, 87, .42);
+  background: rgba(44, 11, 16, .42);
   color: #ff9aa2;
 }
-.command-btn.danger span { color: #ff6570; }
+.command-btn.danger i { border-color: rgba(255, 67, 87, .42); background: rgba(255, 67, 87, .10); color: #ff6570; }
 .command-divider {
   width: 1px;
-  margin: 4px 3px;
-  background: rgba(219, 181, 56, .25);
+  height: 22px;
+  margin: 0 2px;
+  background: rgba(137, 178, 223, .18);
 }
 .chip-grid {
   display: grid;
