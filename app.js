@@ -465,9 +465,7 @@ function renderWorkspace(c) {
         '<div><div class="case-id">' + esc(c.numero) + '</div><h1>' + esc(c.titre) + '</h1><div class="subline"><span>Ouvert le ' + esc(c.date_ouverture) + '</span><span>Derniere modif. ' + esc(c.updated_at) + '</span><span>Par ' + esc(c.responsable || 'CID') + '</span></div></div>',
         '<div class="case-command-bar">' +
           commandButton('&#9998;', 'Modifier', 'neutral', callAttr('openCaseModal', c.id)) +
-          commandButton('&#43;', 'Note', 'neutral', callAttr('openNoteModal', c.id)) +
-          commandButton('&#9671;', 'Personne', 'blue', callAttr('openPersonModal', c.id)) +
-          commandButton('&#9670;', 'Preuve', 'gold', callAttr('openEvidenceModal', c.id)) +
+          addMenu(c) +
           '<span class="command-divider"></span>' +
           commandButton('&#9635;', 'Archiver', 'neutral', callAttr('archiveCase', c.id)) +
           (canDeleteCases() ? commandButton('&#10005;', 'Supprimer', 'danger', callAttr('deleteCase', c.id)) : '') +
@@ -494,6 +492,13 @@ function renderWorkspace(c) {
 function chip(label, value) { return '<div class="chip"><span>' + esc(label) + '</span><strong>' + value + '</strong></div>'; }
 function commandButton(icon, label, tone, action) {
   return '<button type="button" class="command-btn ' + esc(tone || 'neutral') + '" onclick="' + action + '"><i aria-hidden="true">' + icon + '</i><span>' + esc(label) + '</span></button>';
+}
+function addMenu(c) {
+  return '<details class="add-menu"><summary class="command-btn gold"><i aria-hidden="true">&#43;</i><span>Ajout</span></summary><div class="add-menu-panel">' +
+    commandButton('&#43;', 'Note', 'neutral', callAttr('openNoteModal', c.id)) +
+    commandButton('&#9671;', 'Personne', 'blue', callAttr('openPersonModal', c.id)) +
+    commandButton('&#9670;', 'Preuve', 'gold', callAttr('openEvidenceModal', c.id)) +
+  '</div></details>';
 }
 function noteHtml(c, n) {
   return '<button type="button" class="note-item clickable-note" onclick="' + callAttr('openNoteModal', c.id, n._index) + '"><strong>' + esc(n.date || '-') + '</strong><span>' + esc(n.texte || '') + '</span></button>';

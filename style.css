@@ -434,6 +434,33 @@ textarea { resize: vertical; min-height: 96px; }
   margin: 0 2px;
   background: rgba(137, 178, 223, .18);
 }
+.add-menu {
+  position: relative;
+}
+.add-menu summary {
+  list-style: none;
+}
+.add-menu summary::-webkit-details-marker {
+  display: none;
+}
+.add-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  gap: 7px;
+  min-width: 150px;
+  padding: 8px;
+  border: 1px solid rgba(216,182,71,.34);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(16, 16, 15, .98), rgba(7, 8, 9, .98));
+  box-shadow: 0 18px 40px rgba(0,0,0,.38);
+}
+.add-menu-panel .command-btn {
+  width: 100%;
+  justify-content: flex-start;
+}
 .chip-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(130px, 1fr));
