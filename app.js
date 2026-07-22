@@ -224,6 +224,7 @@ function renderApp() {
   ].join('');
   $('globalSearch').addEventListener('input', function() {
     STATE.q = this.value;
+    if (STATE.q.trim()) STATE.route = { page: 'search' };
     renderContent();
   });
   renderContent();
@@ -249,12 +250,73 @@ function allFiltered(includeArchived) {
 }
 
 function renderContent() {
+  if (STATE.route.page === 'search') return renderSearchResults();
   if (STATE.route.page === 'dashboard') return renderDashboard();
   if (STATE.route.page === 'personnes') return renderPeopleIndex();
   if (STATE.route.page === 'preuves') return renderEvidenceIndex();
   if (STATE.route.page === 'gestion') return renderGestion();
   if (STATE.route.page === 'archives') return renderDossiers(true);
   renderDossiers(false);
+}
+
+function matchText(value, q) {
+  return String(value || '').toLowerCase().indexOf(q) !== -1;
+}
+function searchContext(fields, q) {
+  for (var i = 0; i < fields.length; i++) {
+    if (matchText(fields[i], q)) return fields[i];
+  }
+  return fields.filter(Boolean).join(' - ');
+}
+function renderSearchResults() {
+  var q = STATE.q.trim().toLowerCase();
+  var results = [];
+  if (q) {
+    casesLoad().forEach(function(c) {
+      if (matchText([c.numero, c.titre, c.statut, c.priorite, c.classification, c.confidentialite, c.resume, c.description, c.responsable].join(' '), q)) {
+        results.push({ type: 'Dossier', title: (c.numero || '-') + ' - ' + (c.titre || 'Dossier sans titre'), meta: searchContext([c.resume, c.description, c.statut, c.priorite, c.classification], q), action: callAttr('openSearchResult', 'dossiers', { id: c.id }) });
+      }
+      (c.personnes || []).forEach(function(p) {
+        if (matchText([p.nom, p.type, p.tel, p.discord_id, p.commentaires].join(' '), q)) {
+          results.push({ type: 'Personne', title: p.nom || 'Personne sans nom', meta: (c.numero || '-') + ' - ' + searchContext([p.type, p.tel, p.commentaires], q), action: callAttr('openSearchResult', 'dossiers', { id: c.id, person: p.id }) });
+        }
+        (p.fichiers || []).forEach(function(f) {
+          if (matchText([f.type, f.note, f.attachment && f.attachment.name].join(' '), q)) {
+            results.push({ type: 'Fichier personne', title: (f.attachment && f.attachment.name) || f.type || 'Fichier', meta: (p.nom || '-') + ' - ' + searchContext([f.type, f.note], q), action: callAttr('openSearchResult', 'dossiers', { id: c.id, person: p.id }) });
+          }
+        });
+      });
+      (c.preuves || []).forEach(function(e) {
+        var detail = proofDetailsText(c, e);
+        if (matchText([e.scelle, e.type, e.description, detail, e.attachment && e.attachment.name].join(' '), q)) {
+          results.push({ type: 'Preuve', title: (e.scelle || '-') + ' - ' + (e.type || '-'), meta: (c.numero || '-') + ' - ' + searchContext([detail, e.description, e.attachment && e.attachment.name], q), action: callAttr('openSearchResult', 'dossiers', { id: c.id }) });
+        }
+      });
+      (c.journal || []).filter(function(j) { return j.type === 'note'; }).forEach(function(j) {
+        if (matchText([j.date, j.texte].join(' '), q)) {
+          results.push({ type: 'Note', title: c.numero + ' - Note du ' + (j.date || '-'), meta: j.texte || '', action: callAttr('openSearchResult', 'dossiers', { id: c.id }) });
+        }
+      });
+    });
+  }
+  $('content').innerHTML = [
+    '<section class="panel section search-results-panel">',
+      '<div class="panel-head flush-head"><div><div class="kicker">Recherche CID</div><h1>Resultats pour "' + esc(STATE.q.trim()) + '"</h1></div><button class="btn btn-ghost btn-small" onclick="clearGlobalSearch()">Effacer</button></div>',
+      results.length ? '<div class="search-results">' + results.map(function(r) {
+        return '<button class="search-result" onclick="' + r.action + '"><span>' + esc(r.type) + '</span><strong>' + esc(r.title) + '</strong><p>' + esc(r.meta || '-') + '</p></button>';
+      }).join('') + '</div>' : '<div class="empty small-search-empty">Aucun resultat trouve.</div>',
+    '</section>'
+  ].join('');
+}
+function clearGlobalSearch() {
+  STATE.q = '';
+  STATE.route = { page: 'dashboard' };
+  renderApp();
+}
+function openSearchResult(page, extra) {
+  STATE.q = '';
+  STATE.route = Object.assign({ page: page }, extra || {});
+  renderApp();
 }
 
 function renderDashboard() {
@@ -401,7 +463,7 @@ function renderPersonWorkspace(c, pid) {
   ].join('');
 }
 function personEditForm(c, p) {
-  return '<form id="personEditForm" onsubmit="event.preventDefault();' + callAttr('savePersonProfile', c.id, p.id) + '"><div class="form-grid"><input name="nom" value="' + esc(p.nom) + '" placeholder="Nom / prenom"><select name="type">' + options(PERSON_TYPES, p.type || 'Citoyen') + '</select><input name="tel" value="' + esc(p.tel || '') + '" placeholder="Telephone"></div><textarea class="full" name="commentaires" rows="8" style="margin-top:10px" placeholder="Notes, habitudes, signalement, liens...">' + esc(p.commentaires || '') + '</textarea><button class="btn btn-blue btn-small" style="margin-top:10px">Sauvegarder</button></form>';
+  return '<form id="personEditForm" class="person-edit-form" onsubmit="event.preventDefault();' + callAttr('savePersonProfile', c.id, p.id) + '"><div class="form-grid"><input name="nom" value="' + esc(p.nom) + '" placeholder="Nom / prenom"><select name="type">' + options(PERSON_TYPES, p.type || 'Citoyen') + '</select><input name="tel" value="' + esc(p.tel || '') + '" placeholder="Telephone"></div><textarea name="commentaires" rows="10" placeholder="Notes, habitudes, signalement, liens...">' + esc(p.commentaires || '') + '</textarea><button class="btn btn-blue btn-small">Sauvegarder</button></form>';
 }
 function fileCard(c, p, f) {
   var media = attachmentHtml(f.attachment, functionName('previewPersonFile', c.id, p.id, f.id));

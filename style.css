@@ -328,6 +328,24 @@ textarea { resize: vertical; min-height: 96px; }
 .badge.gold { color: #f1d25f; background: rgba(216,182,71,.12); border-color: rgba(216,182,71,.34); }
 
 .workspace { padding: 12px; overflow: auto; }
+.person-page .workspace-head {
+  min-height: 0;
+}
+.person-page .detail-grid {
+  grid-template-columns: minmax(420px, .85fr) minmax(420px, 1.15fr);
+}
+.person-edit-form {
+  display: grid;
+  gap: 10px;
+  max-width: 100%;
+}
+.person-edit-form textarea {
+  width: 100%;
+  min-height: 210px;
+}
+.person-edit-form .btn {
+  justify-self: start;
+}
 .workspace-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -402,6 +420,47 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
 .note-list { display: grid; gap: 8px; max-height: 300px; overflow: auto; }
 .note-item { border: 1px solid rgba(216,182,71,.18); border-radius: 8px; background: rgba(12, 12, 12, .7); padding: 11px; }
 .note-item strong { display: block; margin-bottom: 5px; color: #e7f1ff; }
+.search-results-panel {
+  max-width: 1100px;
+}
+.search-results {
+  display: grid;
+  gap: 8px;
+}
+.search-result {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(216,182,71,.18);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(17,18,18,.94), rgba(8,8,8,.94));
+  color: var(--text);
+  padding: 12px 14px;
+}
+.search-result:hover {
+  border-color: rgba(216,182,71,.55);
+  box-shadow: inset 3px 0 var(--gold);
+}
+.search-result span {
+  display: inline-flex;
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.search-result strong {
+  display: block;
+  font-size: 15px;
+}
+.search-result p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.small-search-empty {
+  min-height: 180px;
+}
 
 .modal-backdrop {
   position: fixed;
