@@ -1,5 +1,6 @@
 var WORKER_BASE = 'https://sasp-intranet-bot.louisleurin.workers.dev';
 var CID_STORE_KEY = 'sasp_cid_cases_v2';
+var CID_DEMO_SEEDED_KEY = 'sasp_cid_demo_seeded_v1';
 var MAX_ATTACHMENT_BYTES = 1800000;
 var EFFECTIVE_CID_ROLE_ID = window.CID_ROLE_ID || '1518631634524569641';
 var CID_INVESTIGATOR_ROLE_ID = '1518631634524569641';
@@ -169,7 +170,15 @@ function renderLogin(message) {
 }
 
 function casesLoad() {
-  try { return JSON.parse(localStorage.getItem(CID_STORE_KEY) || '[]'); }
+  try {
+    var list = JSON.parse(localStorage.getItem(CID_STORE_KEY) || '[]');
+    if (!localStorage.getItem(CID_DEMO_SEEDED_KEY) && !list.some(function(c) { return c.id === 'cid_demo_complete'; })) {
+      list.unshift(exampleCase(list));
+      casesSave(list);
+      localStorage.setItem(CID_DEMO_SEEDED_KEY, '1');
+    }
+    return list;
+  }
   catch(e) { return []; }
 }
 function casesSave(list) { localStorage.setItem(CID_STORE_KEY, JSON.stringify(list)); }
@@ -189,6 +198,50 @@ function nextNumber(list) {
     return match ? Math.max(m, parseInt(match[1], 10)) : m;
   }, 0);
   return 'CID-' + year + '-' + String(max + 1).padStart(4, '0');
+}
+
+function exampleCase(list) {
+  var suspect1 = 'demo_p_suspect_1';
+  var suspect2 = 'demo_p_suspect_2';
+  var victim = 'demo_p_victim_1';
+  var witness = 'demo_p_witness_1';
+  var investigator = 'demo_p_investigator_1';
+  var opened = '2026-07-22 18:25';
+  return {
+    id: 'cid_demo_complete',
+    numero: nextNumber(list || []),
+    titre: 'Braquage organise - Fleeca Vinewood',
+    statut: 'Ouvert',
+    priorite: 'Critique',
+    classification: 'Braquage',
+    confidentialite: 'CID uniquement',
+    responsable: displayName(),
+    resume: 'Groupe arme suspecte dans un braquage coordonne sur Fleeca Vinewood. Deux suspects identifies, un vehicule signale, plusieurs scelles a exploiter.',
+    description: 'Le 22/07/2026 vers 18h10, plusieurs unites SASP signalent une prise d otage suivie d un braquage. Les suspects auraient utilise un Sultan RS noir immatricule 8QX-441. Une arme de poing, des douilles, un telephone et une petite quantite de stupefiants ont ete saisis apres une poursuite terminee pres de Rockford Hills. Le dossier sert d exemple complet pour tester les fiches personnes, preuves, notes, filtres et recherche globale.',
+    date_ouverture: opened,
+    updated_at: opened,
+    personnes: [
+      { id: suspect1, nom: 'Marcus Velasquez', type: 'Suspect', tel: '555-1842', commentaires: 'Conducteur presume. Porte une veste noire, tatouage cou droit. A relier au vehicule Sultan RS.', fichiers: [] },
+      { id: suspect2, nom: 'Darnell Johnson', type: 'Suspect', tel: '555-5591', commentaires: 'Suspect arme vu cote coffre. Possiblement en lien avec une saisie Glock.', fichiers: [] },
+      { id: victim, nom: 'Lena Brooks', type: 'Victime', tel: '555-7204', commentaires: 'Employee Fleeca. Declare avoir ete maintenue sous menace pendant environ 12 minutes.', fichiers: [] },
+      { id: witness, nom: 'Evan Carter', type: 'Temoin', tel: '555-3380', commentaires: 'Temoin civil. A vu le Sultan RS quitter la zone par l est.', fichiers: [] },
+      { id: investigator, nom: displayName(), type: 'Enqueteur', tel: '555-0000', commentaires: 'Responsable CID du dossier exemple.', fichiers: [] }
+    ],
+    preuves: [
+      { id: 'demo_e_weapon', scelle: 'SC-2026-0001', type: 'Arme', description: 'Arme recuperee apres interpellation.', details: { type_arme: 'Glock 19', numero_serie: 'G19-VWD-7742', suspect_id: suspect2 }, attachment: null, date: '2026-07-22 18:31' },
+      { id: 'demo_e_shell', scelle: 'SC-2026-0002', type: 'Douille', description: 'Deux douilles retrouvees derriere le comptoir.', details: {}, attachment: null, date: '2026-07-22 18:34' },
+      { id: 'demo_e_drug', scelle: 'SC-2026-0003', type: 'Drogue', description: 'Sachet trouve dans le vehicule.', details: { type_drogue: 'Cocaine', quantite: '14 pochons', suspect_id: suspect1 }, attachment: null, date: '2026-07-22 18:39' },
+      { id: 'demo_e_vehicle', scelle: 'SC-2026-0004', type: 'Vehicule', description: 'Vehicule utilise pour la fuite.', details: { modele: 'Sultan RS noir', plaque: '8QX-441', suspect_id: suspect1 }, attachment: null, date: '2026-07-22 18:45' },
+      { id: 'demo_e_phone', scelle: 'SC-2026-0005', type: 'Telephone', description: 'Telephone saisi sur Darnell Johnson. Extraction a demander.', details: {}, attachment: null, date: '2026-07-22 18:48' },
+      { id: 'demo_e_doc', scelle: 'SC-2026-0006', type: 'Document', description: 'Rapport d intervention SASP ajoute au dossier.', details: {}, attachment: null, date: '2026-07-22 18:52' }
+    ],
+    journal: [
+      { date: '2026-07-22 19:05', texte: 'A confirmer : exploitation telephone et verification plaque 8QX-441.', type: 'note' },
+      { date: '2026-07-22 18:58', texte: 'Priorite critique maintenue, suspects potentiellement lies a une serie de braquages.', type: 'note' },
+      { date: '2026-07-22 18:40', texte: 'Demander comparaison balistique sur Glock 19 et douilles SC-2026-0002.', type: 'note' },
+      { date: '2026-07-22 18:25', texte: 'Dossier exemple cree pour presentation CID.', type: 'system' }
+    ]
+  };
 }
 
 function renderApp() {
