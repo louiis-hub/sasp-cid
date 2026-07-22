@@ -27,7 +27,7 @@ body {
   font-size: 14px;
 }
 
-button, input, select, textarea { font: inherit; }
+button, input, select, textarea { font: inherit; min-width: 0; }
 button { cursor: pointer; }
 
 .login-screen {
@@ -274,7 +274,7 @@ button { cursor: pointer; }
   border-bottom: 1px solid var(--line);
 }
 .panel-title { font-weight: 800; font-size: 16px; }
-.filters { display: grid; grid-template-columns: 1fr 112px; gap: 8px; padding: 10px; border-bottom: 1px solid rgba(91,139,190,.18); }
+.filters { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 8px; padding: 10px; border-bottom: 1px solid rgba(91,139,190,.18); }
 input, select, textarea {
   background: #090a0a;
   color: var(--text);
@@ -284,6 +284,7 @@ input, select, textarea {
   outline: none;
   color-scheme: dark;
 }
+.filters select { width: 100%; }
 textarea { resize: vertical; min-height: 96px; }
 .case-list { display: grid; gap: 7px; padding: 9px; max-height: calc(100vh - 210px); overflow: auto; }
 .case-item {

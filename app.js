@@ -29,6 +29,12 @@ function esc(v) {
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
 }
+function js(v) { return JSON.stringify(v); }
+function attrJs(v) { return esc(js(v)); }
+function callAttr(name) {
+  var args = Array.prototype.slice.call(arguments, 1).map(attrJs).join(',');
+  return name + '(' + args + ')';
+}
 function nowLabel() {
   var d = new Date();
   return d.toISOString().slice(0, 16).replace('T', ' ');
@@ -213,7 +219,7 @@ function renderApp() {
 }
 
 function navButton(page, label, icon) {
-  return '<button class="' + (STATE.route.page === page ? 'active' : '') + '" onclick="go(\'' + page + '\')"><span class="nav-icon">' + esc(icon || '•') + '</span>' + esc(label) + '</button>';
+  return '<button class="' + (STATE.route.page === page ? 'active' : '') + '" onclick="' + callAttr('go', page) + '"><span class="nav-icon">' + esc(icon || '-') + '</span>' + esc(label) + '</button>';
 }
 function go(page, extra) {
   STATE.route = Object.assign({ page: page }, extra || {});
@@ -258,7 +264,7 @@ function renderDashboard() {
       '<p class="text">Interface separee pour les dossiers CID : suspects, victimes, enqueteurs, preuves, photos, videos, notes et archives.</p>',
     '</section>',
     '<section class="panel section compact-panel">',
-      '<div class="panel-head flush-head"><div class="panel-title">Derniers dossiers</div><button class="btn btn-ghost btn-small" onclick="go(' + js('dossiers') + ')">Ouvrir les dossiers</button></div>',
+      '<div class="panel-head flush-head"><div class="panel-title">Derniers dossiers</div><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers') + '">Ouvrir les dossiers</button></div>',
       recentCasesPanel(list),
     '</section>'
     ].join('');
@@ -269,7 +275,7 @@ function recentCasesPanel(list) {
   var recent = list.slice().sort(function(a, b) { return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); }).slice(0, 5);
   if (!recent.length) return '<div class="small-empty">Aucun dossier CID pour le moment.</div>';
   return '<div class="mini-list">' + recent.map(function(c) {
-    return '<button class="mini-row" onclick="go(' + js('dossiers') + ',{id:' + js(c.id) + '})"><span>' + esc(c.numero) + '</span><strong>' + esc(c.titre || 'Dossier sans titre') + '</strong>' + statusBadge(c.statut) + '</button>';
+    return '<button class="mini-row" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '"><span>' + esc(c.numero) + '</span><strong>' + esc(c.titre || 'Dossier sans titre') + '</strong>' + statusBadge(c.statut) + '</button>';
   }).join('') + '</div>';
 }
 
@@ -313,7 +319,7 @@ function wireCaseControls() {
 
 function caseListItem(c, activeId) {
   return [
-    '<article class="case-item ' + (c.id === activeId ? 'active' : '') + '" onclick="go(\'dossiers\',{id:' + JSON.stringify(c.id).replace(/"/g, '&quot;') + '})">',
+    '<article class="case-item ' + (c.id === activeId ? 'active' : '') + '" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">',
       '<div class="case-top"><span>' + esc(c.numero) + '</span>' + priorityBadge(c.priorite) + '</div>',
       '<div class="case-name">' + esc(c.titre || 'Dossier sans titre') + '</div>',
       '<div class="case-meta"><span>' + esc(c.responsable || 'CID') + '</span><span>' + esc(c.updated_at || '-') + '</span></div>',
@@ -331,7 +337,7 @@ function renderWorkspace(c) {
     '<div class="workspace">',
       '<div class="workspace-head">',
         '<div><div class="case-id">' + esc(c.numero) + '</div><h1>' + esc(c.titre) + '</h1><div class="subline"><span>Ouvert le ' + esc(c.date_ouverture) + '</span><span>Derniere modif. ' + esc(c.updated_at) + '</span><span>Par ' + esc(c.responsable || 'CID') + '</span></div></div>',
-        '<div class="actions"><button class="btn btn-ghost btn-small" onclick="openCaseModal(' + js(c.id) + ')">Modifier</button><button class="btn btn-ghost btn-small" onclick="openNoteModal(' + js(c.id) + ')">Note</button><button class="btn btn-blue btn-small" onclick="openPersonModal(' + js(c.id) + ')">Personne</button><button class="btn btn-gold btn-small" onclick="openEvidenceModal(' + js(c.id) + ')">Preuve</button><button class="btn btn-ghost btn-small" onclick="archiveCase(' + js(c.id) + ')">Archiver</button><button class="btn btn-red btn-small" onclick="deleteCase(' + js(c.id) + ')">Supprimer</button></div>',
+        '<div class="actions"><button class="btn btn-ghost btn-small" onclick="' + callAttr('openCaseModal', c.id) + '">Modifier</button><button class="btn btn-ghost btn-small" onclick="' + callAttr('openNoteModal', c.id) + '">Note</button><button class="btn btn-blue btn-small" onclick="' + callAttr('openPersonModal', c.id) + '">Personne</button><button class="btn btn-gold btn-small" onclick="' + callAttr('openEvidenceModal', c.id) + '">Preuve</button><button class="btn btn-ghost btn-small" onclick="' + callAttr('archiveCase', c.id) + '">Archiver</button><button class="btn btn-red btn-small" onclick="' + callAttr('deleteCase', c.id) + '">Supprimer</button></div>',
       '</div>',
       '<div class="chip-grid">',
         chip('Statut', statusBadge(c.statut)),
@@ -356,7 +362,7 @@ function noteHtml(n) { return '<div class="note-item"><strong>' + esc(n.date || 
 function peopleTable(c, people) {
   if (!people.length) return '<div class="text">Aucune personne liee.</div>';
   return '<table><tbody>' + people.map(function(p) {
-    return '<tr class="clickable" onclick="go(\'dossiers\',{id:' + js(c.id) + ',person:' + js(p.id) + '})"><td><strong>' + esc(p.nom) + '</strong></td><td>' + badge(p.type, 'blue') + '</td><td>' + esc(p.tel || '-') + '</td></tr>';
+    return '<tr class="clickable" onclick="' + callAttr('go', 'dossiers', { id: c.id, person: p.id }) + '"><td><strong>' + esc(p.nom) + '</strong></td><td>' + badge(p.type, 'blue') + '</td><td>' + esc(p.tel || '-') + '</td></tr>';
   }).join('') + '</tbody></table>';
 }
 function evidenceTable(c, proofs) {
@@ -373,8 +379,8 @@ function renderPersonWorkspace(c, pid) {
   return [
     '<div class="workspace person-page">',
       '<div class="workspace-head">',
-        '<div><button class="btn btn-ghost btn-small" onclick="go(\'dossiers\',{id:' + js(c.id) + '})">Retour au dossier</button><div class="case-id" style="margin-top:12px">' + esc(c.numero) + ' - Fiche personne</div><h1>' + esc(p.nom) + '</h1><div class="subline"><span>' + esc(p.type || '-') + '</span><span>' + esc(p.tel || '-') + '</span></div></div>',
-        '<div class="actions"><button class="btn btn-gold btn-small" onclick="openPersonFileModal(' + js(c.id) + ',' + js(p.id) + ')">Ajouter fichier</button><button class="btn btn-red btn-small" onclick="deletePerson(' + js(c.id) + ',' + js(p.id) + ')">Supprimer</button></div>',
+        '<div><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">Retour au dossier</button><div class="case-id" style="margin-top:12px">' + esc(c.numero) + ' - Fiche personne</div><h1>' + esc(p.nom) + '</h1><div class="subline"><span>' + esc(p.type || '-') + '</span><span>' + esc(p.tel || '-') + '</span></div></div>',
+        '<div class="actions"><button class="btn btn-gold btn-small" onclick="' + callAttr('openPersonFileModal', c.id, p.id) + '">Ajouter fichier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deletePerson', c.id, p.id) + '">Supprimer</button></div>',
       '</div>',
       '<div class="detail-grid">',
         '<section class="panel section"><h2>Identite</h2>' + personEditForm(c, p) + '</section>',
@@ -384,7 +390,7 @@ function renderPersonWorkspace(c, pid) {
   ].join('');
 }
 function personEditForm(c, p) {
-  return '<form id="personEditForm" onsubmit="event.preventDefault();savePersonProfile(' + js(c.id) + ',' + js(p.id) + ')"><div class="form-grid"><input name="nom" value="' + esc(p.nom) + '" placeholder="Nom / prenom"><select name="type">' + options(PERSON_TYPES, p.type || 'Citoyen') + '</select><input name="tel" value="' + esc(p.tel || '') + '" placeholder="Telephone"></div><textarea class="full" name="commentaires" rows="8" style="margin-top:10px" placeholder="Notes, habitudes, signalement, liens...">' + esc(p.commentaires || '') + '</textarea><button class="btn btn-blue btn-small" style="margin-top:10px">Sauvegarder</button></form>';
+  return '<form id="personEditForm" onsubmit="event.preventDefault();' + callAttr('savePersonProfile', c.id, p.id) + '"><div class="form-grid"><input name="nom" value="' + esc(p.nom) + '" placeholder="Nom / prenom"><select name="type">' + options(PERSON_TYPES, p.type || 'Citoyen') + '</select><input name="tel" value="' + esc(p.tel || '') + '" placeholder="Telephone"></div><textarea class="full" name="commentaires" rows="8" style="margin-top:10px" placeholder="Notes, habitudes, signalement, liens...">' + esc(p.commentaires || '') + '</textarea><button class="btn btn-blue btn-small" style="margin-top:10px">Sauvegarder</button></form>';
 }
 function fileCard(c, p, f) {
   var media = attachmentHtml(f.attachment, functionName('previewPersonFile', c.id, p.id, f.id));
@@ -394,7 +400,7 @@ function fileCard(c, p, f) {
 function renderPeopleIndex() {
   var rows = [];
   casesLoad().forEach(function(c) { (c.personnes || []).forEach(function(p) { rows.push({ c: c, p: p }); }); });
-  $('content').innerHTML = '<section class="panel section"><h2>Personnes CID</h2><table><thead><tr><th>Nom</th><th>Type</th><th>Telephone</th><th>Dossier</th></tr></thead><tbody>' + (rows.length ? rows.map(function(r) { return '<tr class="clickable" onclick="go(\'dossiers\',{id:' + js(r.c.id) + ',person:' + js(r.p.id) + '})"><td><strong>' + esc(r.p.nom) + '</strong></td><td>' + badge(r.p.type, 'blue') + '</td><td>' + esc(r.p.tel || '-') + '</td><td>' + esc(r.c.numero) + ' - ' + esc(r.c.titre) + '</td></tr>'; }).join('') : '<tr><td colspan="4">Aucune personne.</td></tr>') + '</tbody></table></section>';
+  $('content').innerHTML = '<section class="panel section"><h2>Personnes CID</h2><table><thead><tr><th>Nom</th><th>Type</th><th>Telephone</th><th>Dossier</th></tr></thead><tbody>' + (rows.length ? rows.map(function(r) { return '<tr class="clickable" onclick="' + callAttr('go', 'dossiers', { id: r.c.id, person: r.p.id }) + '"><td><strong>' + esc(r.p.nom) + '</strong></td><td>' + badge(r.p.type, 'blue') + '</td><td>' + esc(r.p.tel || '-') + '</td><td>' + esc(r.c.numero) + ' - ' + esc(r.c.titre) + '</td></tr>'; }).join('') : '<tr><td colspan="4">Aucune personne.</td></tr>') + '</tbody></table></section>';
 }
 function renderEvidenceIndex() {
   var rows = [];
@@ -420,13 +426,13 @@ function managedOptionPanel(key, title, placeholder) {
   var list = managedOptions(key);
   return [
     '<section class="option-panel">',
-      '<div class="option-head"><h2>' + esc(title) + '</h2><button class="btn btn-ghost btn-small" onclick="resetManagedOptions(' + js(key) + ')">Reset</button></div>',
+      '<div class="option-head"><h2>' + esc(title) + '</h2><button class="btn btn-ghost btn-small" onclick="' + callAttr('resetManagedOptions', key) + '">Reset</button></div>',
       '<div class="option-list">',
         list.map(function(value) {
-          return '<div class="option-row"><span>' + esc(value) + '</span><button class="btn btn-red btn-small" onclick="deleteManagedOption(' + js(key) + ',' + js(value) + ')">Supprimer</button></div>';
+          return '<div class="option-row"><span>' + esc(value) + '</span><button class="btn btn-red btn-small" onclick="' + callAttr('deleteManagedOption', key, value) + '">Supprimer</button></div>';
         }).join(''),
       '</div>',
-      '<div class="option-add"><input id="add_' + esc(key) + '" placeholder="' + esc(placeholder) + '"><button class="btn btn-gold btn-small" onclick="addManagedOption(' + js(key) + ')">Ajouter</button></div>',
+      '<div class="option-add"><input id="add_' + esc(key) + '" placeholder="' + esc(placeholder) + '"><button class="btn btn-gold btn-small" onclick="' + callAttr('addManagedOption', key) + '">Ajouter</button></div>',
     '</section>'
   ].join('');
 }
@@ -460,10 +466,8 @@ function resetManagedOptions(key) {
 function badge(text, tone) { return '<span class="badge ' + (tone || '') + '">' + esc(text || '-') + '</span>'; }
 function statusBadge(v) { return badge(v || '-', /ferme|classe/i.test(v || '') ? 'green' : v === 'En attente' ? 'orange' : 'blue'); }
 function priorityBadge(v) { return badge(v || 'Normale', v === 'Critique' ? 'red' : v === 'Haute' ? 'orange' : v === 'Faible' ? 'green' : 'gold'); }
-function js(v) { return JSON.stringify(v); }
 function functionName(name) {
-  var args = Array.prototype.slice.call(arguments, 1).map(js).join(',');
-  return name + '(' + args + ')';
+  return callAttr.apply(null, arguments);
 }
 
 function openModal(title, body, footer) {
@@ -485,7 +489,7 @@ function openCaseModal(id) {
       field('Resume rapide', '<textarea name="resume" rows="3" placeholder="Resume court du dossier">' + esc(c && c.resume || '') + '</textarea>', 'full') +
       field('Description complete', '<textarea name="description" rows="6" placeholder="Faits, contexte, elements connus...">' + esc(c && c.description || '') + '</textarea>', 'full') +
     '</div></form>',
-    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="saveCase(' + (id ? js(id) : '') + ')">Sauvegarder</button>'
+    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="' + (id ? callAttr('saveCase', id) : 'saveCase()') + '">Sauvegarder</button>'
   );
 }
 
@@ -529,7 +533,7 @@ function openPersonModal(caseId) {
       '<input name="tel" placeholder="Numero de telephone">' +
       '<textarea class="full" name="commentaires" rows="4" placeholder="Commentaires CID"></textarea>' +
     '</div></form>',
-    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="savePerson(' + js(caseId) + ')">Ajouter</button>'
+    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="' + callAttr('savePerson', caseId) + '">Ajouter</button>'
   );
 }
 function savePerson(caseId) {
@@ -577,7 +581,7 @@ function openEvidenceModal(caseId) {
       '<div id="vehicleFields" class="form-grid full hidden"><input name="modele" placeholder="Modele du vehicule"><input name="plaque" placeholder="Plaque"><select name="suspect_vehicule">' + suspects + '</select></div>' +
       '<textarea class="full" name="description" rows="4" placeholder="Description / contexte"></textarea>' +
     '</div></form>',
-    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="saveEvidence(' + js(caseId) + ')">Ajouter</button>'
+    '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="' + callAttr('saveEvidence', caseId) + '">Ajouter</button>'
   );
   toggleEvidenceFields();
 }
@@ -620,7 +624,7 @@ async function saveEvidence(caseId) {
 }
 
 function openNoteModal(caseId) {
-  openModal('Ajouter une note', '<form id="noteForm"><textarea name="note" rows="6" placeholder="Note CID..." required></textarea></form>', '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="saveNote(' + js(caseId) + ')">Ajouter</button>');
+  openModal('Ajouter une note', '<form id="noteForm"><textarea name="note" rows="6" placeholder="Note CID..." required></textarea></form>', '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="' + callAttr('saveNote', caseId) + '">Ajouter</button>');
 }
 function saveNote(caseId) {
   var c = caseGet(caseId);
@@ -633,7 +637,7 @@ function saveNote(caseId) {
 }
 
 function openPersonFileModal(caseId, pid) {
-  openModal('Ajouter un fichier personne', '<form id="personFileForm"><div class="form-grid"><select name="type">' + options(['Photo','Video','Audio','Document','Autre'], 'Photo') + '</select><input name="fichier" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" required><textarea class="full" name="note" rows="3" placeholder="Note"></textarea></div></form>', '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="savePersonFile(' + js(caseId) + ',' + js(pid) + ')">Ajouter</button>');
+  openModal('Ajouter un fichier personne', '<form id="personFileForm"><div class="form-grid"><select name="type">' + options(['Photo','Video','Audio','Document','Autre'], 'Photo') + '</select><input name="fichier" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" required><textarea class="full" name="note" rows="3" placeholder="Note"></textarea></div></form>', '<button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-gold" onclick="' + callAttr('savePersonFile', caseId, pid) + '">Ajouter</button>');
 }
 async function savePersonFile(caseId, pid) {
   var c = caseGet(caseId);
