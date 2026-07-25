@@ -23,6 +23,16 @@ var CLASSIFICATIONS = ['Homicide', 'Tentative', 'Braquage', 'Criminalite organis
 var CONFIDENTIALITIES = ['CID uniquement', 'Command Staff', 'SASP'];
 var PERSON_TYPES = ['Citoyen', 'Suspect', 'Victime', 'Temoin', 'Informateur', 'Enqueteur'];
 var EVIDENCE_TYPES = ['Photo', 'Document', 'ADN', 'Douille', 'Empreinte', 'Arme', 'Drogue', 'Vehicule', 'Objet', 'Telephone', 'Temoignage', 'Autre'];
+var CHARGES_CATALOG = [
+  { nom: 'Braquage a main armee', amende: 25000, prison: 45 },
+  { nom: 'Possession illegale d une arme', amende: 12000, prison: 25 },
+  { nom: 'Refus d obtemperer', amende: 8000, prison: 15 },
+  { nom: 'Association de malfaiteurs', amende: 15000, prison: 30 },
+  { nom: 'Tentative de meurtre', amende: 35000, prison: 70 },
+  { nom: 'Prise d otage', amende: 30000, prison: 65 },
+  { nom: 'Trafic de stupefiants', amende: 22000, prison: 40 },
+  { nom: 'Entrave a enquete', amende: 7000, prison: 10 }
+];
 var CID_OPTIONS_KEY = 'sasp_cid_managed_options_v1';
 var OPTION_GROUPS = {
   priorites: { title: 'Priorites', defaults: PRIORITIES },
@@ -668,7 +678,7 @@ function caseHero(c, people, proofs) {
       intelCard('Temoins', countPeople(people, 'Temoin'), '&#128065;'),
       intelCard('Preuves', proofs.length, '&#9635;'),
       intelCard('Temps ouvert', caseAge(c), '&#9201;'),
-      intelCard('Resolution', caseProgress(c) + '%', '&#10003;'),
+      intelCard('Rapports MDT', totalReports(people), '&#128196;'),
     '</div>'
   ].join('');
 }
@@ -678,12 +688,10 @@ function intelCard(label, value, icon) {
 function caseTabs(c, active) {
   var tabs = [
     ['overview', 'Vue generale', ''],
-    ['board', 'Tableau enquete', ''],
     ['personnes', 'Personnes', (c.personnes || []).length],
     ['preuves', 'Preuves', (c.preuves || []).length],
     ['rapports', 'Rapports', ''],
     ['mandats', 'Mandats', ''],
-    ['chronologie', 'Chronologie', ''],
     ['documents', 'Documents', ''],
     ['journal', 'Journal', '']
   ];
@@ -692,20 +700,15 @@ function caseTabs(c, active) {
   }).join('') + '</div>';
 }
 function renderCaseTabContent(c, activeTab, people, proofs, notes) {
-  if (activeTab === 'board') return renderInvestigationBoard(c, people, proofs, true);
   if (activeTab === 'personnes') return '<div class="cid-single-panel">' + casePeopleCards(c, people, true) + '</div>';
   if (activeTab === 'preuves') return '<div class="cid-single-panel">' + caseEvidenceGallery(c, proofs, true) + '<section class="panel section cid-table-panel">' + evidenceTable(c, proofs) + '</section></div>';
-  if (activeTab === 'chronologie' || activeTab === 'journal') return '<div class="cid-single-panel">' + caseTimeline(c, activeTab === 'journal') + '</div>';
+  if (activeTab === 'journal') return '<div class="cid-single-panel"><section class="panel section cid-notes-panel"><h2>Notes CID</h2><div class="note-list">' + (notes.length ? notes.map(function(n) { return noteHtml(c, n); }).join('') : '<div class="note-item">Aucune note.</div>') + '</div></section></div>';
   if (/rapports|mandats|documents/.test(activeTab)) return renderEmptyOperationalTab(activeTab);
   return [
     '<div class="cid-overview-grid">',
       caseIdentityPanel(c, people, proofs),
-      caseInvestigationPanel(c, people, proofs),
       casePeopleCards(c, people, false),
       caseEvidenceGallery(c, proofs, false),
-      caseTimeline(c, false),
-      caseActivity(c),
-      renderInvestigationBoard(c, people, proofs, false),
       '<section class="panel section cid-summary-panel"><h2>Resume operationnel</h2><p class="text">' + esc(c.description || c.resume || 'Aucun descriptif renseigne.') + '</p></section>',
       '<section class="panel section cid-notes-panel"><h2>Notes CID</h2><div class="note-list">' + (notes.length ? notes.map(function(n) { return noteHtml(c, n); }).join('') : '<div class="note-item">Aucune note.</div>') + '</div></section>',
     '</div>'
@@ -716,7 +719,6 @@ function renderEmptyOperationalTab(tab) {
   return '<section class="panel section cid-empty-tab"><div class="kicker">Module CID</div><h2>' + esc(labels[tab] || tab) + '</h2><p class="text">Aucun element specialise n est encore rattache a ce dossier. Les preuves, notes et personnes restent disponibles dans leurs onglets.</p></section>';
 }
 function caseIdentityPanel(c, people, proofs) {
-  var progress = caseProgress(c);
   return [
     '<section class="panel section cid-identity-panel">',
       '<div class="panel-head-mini"><div><div class="kicker">Dossier</div><h2>Fiche identite</h2></div>' + badge('Confidentiel', 'gold') + '</div>',
@@ -731,34 +733,11 @@ function caseIdentityPanel(c, people, proofs) {
         identityRow('Juge', c.juge || 'Aucun'),
         identityRow('Date limite', caseDeadline(c)),
       '</div>',
-      '<div class="progress-block"><div><span>Progression dossier</span><strong>' + progress + '%</strong></div><div class="progress-track"><i style="width:' + progress + '%"></i></div></div>',
     '</section>'
   ].join('');
 }
 function identityRow(label, value, raw) {
   return '<div class="identity-row"><span>' + esc(label) + '</span><strong>' + (raw ? value : esc(value || '-')) + '</strong></div>';
-}
-function caseInvestigationPanel(c, people, proofs) {
-  var investigators = people.filter(function(p) { return p.type === 'Enqueteur'; });
-  var lead = investigators[0] && investigators[0].nom || caseLead(c);
-  var assistants = investigators.slice(1).map(function(p) { return p.nom; }).join(', ') || 'Aucun assistant renseigne';
-  return [
-    '<section class="panel section cid-investigation-panel">',
-      '<div class="panel-head-mini"><div><div class="kicker">Enquete</div><h2>Suivi operationnel</h2></div></div>',
-      '<div class="invest-row"><span>Enqueteur principal</span><strong>' + esc(lead) + '</strong></div>',
-      '<div class="invest-row"><span>Assistants</span><strong>' + esc(assistants) + '</strong></div>',
-      '<div class="objective-list">',
-        objective('Identifier vehicule', proofs.some(function(e) { return e.type === 'Vehicule'; })),
-        objective('Verifier telephone', proofs.some(function(e) { return e.type === 'Telephone'; })),
-        objective('Exploiter ADN / empreintes', proofs.some(function(e) { return /ADN|Empreinte/i.test(e.type || ''); })),
-        objective('Interroger temoin', countPeople(people, 'Temoin') > 0),
-        objective('Preparer mandat', /mandat/i.test((c.description || '') + ' ' + (c.resume || ''))),
-      '</div>',
-    '</section>'
-  ].join('');
-}
-function objective(label, done) {
-  return '<div class="objective ' + (done ? 'done' : '') + '"><i>' + (done ? '&#10003;' : '') + '</i><span>' + esc(label) + '</span></div>';
 }
 function casePeopleCards(c, people, full) {
   return '<section class="panel section cid-people-panel ' + (full ? 'full' : '') + '"><div class="panel-head-mini"><div><div class="kicker">Personnes</div><h2>Personnes liees</h2></div><button class="btn btn-ghost btn-small" onclick="' + callAttr('openPersonModal', c.id) + '">Ajouter</button></div>' + (people.length ? '<div class="person-card-grid">' + people.map(function(p) { return personCard(c, p); }).join('') + '</div>' : '<div class="text">Aucune personne liee.</div>') + '</section>';
@@ -767,12 +746,13 @@ function personCard(c, p) {
   var danger = p.dangerosite || (/suspect/i.test(p.type || '') ? 'Elevee' : 'Normale');
   var warrants = p.mandats || (/suspect/i.test(p.type || '') ? 'A verifier' : '0');
   var casier = p.casier || (/suspect/i.test(p.type || '') ? 'Oui' : 'Non');
+  var reports = personReports(p, c);
   return [
     '<article class="person-card" onclick="' + callAttr('go', 'dossiers', { id: c.id, person: p.id }) + '">',
-      '<div class="person-avatar">' + initials(p.nom) + '</div>',
+      personAvatar(p, 'card'),
       '<div class="person-main"><strong>' + esc(p.nom || 'Inconnu') + '</strong><span>' + esc(p.alias ? 'Alias : ' + p.alias : p.type || 'Personne') + '</span></div>',
       badge(p.type || 'Personne', /suspect/i.test(p.type || '') ? 'red' : 'blue'),
-      '<dl><dt>Dangerosite</dt><dd>' + esc(danger) + '</dd><dt>Mandats</dt><dd>' + esc(warrants) + '</dd><dt>Casier</dt><dd>' + esc(casier) + '</dd><dt>Telephone</dt><dd>' + esc(p.tel || '-') + '</dd></dl>',
+      '<dl><dt>Dangerosite</dt><dd>' + esc(danger) + '</dd><dt>Mandats</dt><dd>' + esc(warrants) + '</dd><dt>Casier</dt><dd>' + esc(casier) + '</dd><dt>Rapports</dt><dd>' + reports.length + '</dd><dt>Telephone</dt><dd>' + esc(p.tel || '-') + '</dd></dl>',
     '</article>'
   ].join('');
 }
@@ -782,28 +762,44 @@ function caseEvidenceGallery(c, proofs, full) {
 function evidenceCard(c, e) {
   var icon = evidenceIcon(e.type);
   var thumb = e.attachment && e.attachment.data ? '<div onclick="event.stopPropagation()">' + attachmentHtml(e.attachment, functionName('previewEvidence', c.id, e.id)) + '</div>' : '<div class="evidence-icon">' + icon + '</div>';
-  return '<article class="evidence-card" onclick="' + callAttr('openEvidenceModal', c.id, e.id) + '">' + thumb + '<div><strong>' + esc(e.scelle || 'SC') + '</strong><span>' + esc(e.type || 'Preuve') + '</span></div><p>' + esc(proofDetailsText(c, e) || e.description || 'Aucun detail') + '</p></article>';
+  return '<article class="evidence-card" onclick="' + callAttr('openEvidenceModal', c.id, e.id) + '">' + thumb + '<div><strong>' + esc(e.scelle || 'SC') + '</strong><span>' + icon + ' ' + esc(e.type || 'Preuve') + '</span></div><p>' + esc(proofDetailsText(c, e) || e.description || 'Aucun detail') + '</p></article>';
 }
-function caseTimeline(c, notesOnly) {
-  var journal = (c.journal || []).map(function(j, i) { return Object.assign({ _index: i }, j); }).reverse();
-  if (notesOnly) journal = journal.filter(function(j) { return j.type === 'note'; });
-  if (!journal.length) journal = [{ date: c.date_ouverture || '-', texte: 'Dossier cree', type: 'system' }];
-  return '<section class="panel section cid-timeline-panel"><div class="panel-head-mini"><div><div class="kicker">Chronologie</div><h2>' + (notesOnly ? 'Notes' : 'Timeline dossier') + '</h2></div><button class="btn btn-ghost btn-small" onclick="' + callAttr('openNoteModal', c.id) + '">Note</button></div><div class="timeline">' + journal.map(function(j) { return '<button class="timeline-item" onclick="' + (j.type === 'note' ? callAttr('openNoteModal', c.id, j._index) : '') + '"><time>' + esc(j.date || '-') + '</time><i></i><span>' + esc(j.texte || '-') + '</span></button>'; }).join('') + '</div></section>';
-}
-function caseActivity(c) {
-  var items = (c.journal || []).slice(-5).reverse();
-  if (!items.length) items = [{ date: c.updated_at || '-', texte: 'Dossier consulte' }];
-  return '<section class="panel section cid-activity-panel"><div class="panel-head-mini"><div><div class="kicker">Activite</div><h2>Flux recent</h2></div></div>' + items.map(function(j) { return '<div class="activity-row"><strong>' + esc(displayName()) + '</strong><span>' + esc(j.texte || 'Mise a jour dossier') + '</span><em>' + esc(j.date || '-') + '</em></div>'; }).join('') + '</section>';
-}
-function renderInvestigationBoard(c, people, proofs, full) {
-  var nodes = people.slice(0, 5).map(function(p, i) { return { kind: 'person', id: p.id, title: p.nom, sub: p.type, x: 12 + (i % 3) * 28, y: 18 + Math.floor(i / 3) * 35 }; });
-  proofs.slice(0, 6).forEach(function(e, i) { nodes.push({ kind: 'proof', id: e.id, title: e.scelle || e.type, sub: e.type, x: 18 + (i % 3) * 28, y: 62 + Math.floor(i / 3) * 24 }); });
-  if (!nodes.length) nodes = [{ kind: 'case', id: c.id, title: c.numero, sub: c.titre, x: 44, y: 42 }];
-  var lines = [];
-  for (var i = 1; i < nodes.length; i++) lines.push('<line x1="' + (nodes[0].x + 8) + '%" y1="' + (nodes[0].y + 4) + '%" x2="' + (nodes[i].x + 8) + '%" y2="' + (nodes[i].y + 4) + '%"></line>');
-  return '<section class="panel section cid-board-panel ' + (full ? 'full' : '') + '"><div class="panel-head-mini"><div><div class="kicker">Tableau enquete</div><h2>Mur de liaison</h2></div><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id, tab: 'board' }) + '">Ouvrir</button></div><div class="investigation-board"><svg viewBox="0 0 100 100" preserveAspectRatio="none">' + lines.join('') + '</svg>' + nodes.map(function(n) { return '<button class="board-node ' + esc(n.kind) + '" style="left:' + n.x + '%;top:' + n.y + '%" onclick="' + (n.kind === 'person' ? callAttr('go', 'dossiers', { id: c.id, person: n.id }) : n.kind === 'proof' ? callAttr('openEvidenceModal', c.id, n.id) : '') + '"><strong>' + esc(n.title) + '</strong><span>' + esc(n.sub || '') + '</span></button>'; }).join('') + '</div></section>';
+function evidenceTypeBadge(type) {
+  return '<span class="badge gold proof-type-badge"><span>' + evidenceIcon(type) + '</span>' + esc(type || 'Preuve') + '</span>';
 }
 function countPeople(people, type) { return people.filter(function(p) { return p.type === type; }).length; }
+function totalReports(people) {
+  return (people || []).reduce(function(sum, p) { return sum + personReports(p, null).length; }, 0);
+}
+function personReports(p, c) {
+  var reports = (p && p.mdt_reports || []).slice();
+  if (p && p.rapport_mdt && !reports.some(function(r) { return r.numero === p.rapport_mdt; })) {
+    reports.unshift({
+      id: 'legacy_' + String(p.rapport_mdt).replace(/\W+/g, '_'),
+      numero: p.rapport_mdt,
+      date_arrestation: '',
+      agent: '',
+      auteurs: '',
+      dossier_cid: c && c.numero || '',
+      lieu: '',
+      statut: 'Archive',
+      resume: p.commentaires || '',
+      charges: [],
+      amende: '',
+      prison: '',
+      saisies: '',
+      preuves: '',
+      decision: '',
+      notes: 'Rapport importe depuis l ancien champ Rapport MDT.'
+    });
+  }
+  return reports;
+}
+function personAvatar(p, size) {
+  var cls = size === 'large' ? 'person-avatar large' : 'person-avatar';
+  if (p && p.photo && p.photo.data) return '<img class="' + cls + '" src="' + p.photo.data + '" alt="">';
+  return '<div class="' + cls + '">' + initials(p && p.nom) + '</div>';
+}
 function initials(name) {
   return String(name || 'CID').split(/\s+/).filter(Boolean).slice(0, 2).map(function(p) { return p.charAt(0).toUpperCase(); }).join('') || 'CID';
 }
@@ -836,14 +832,34 @@ function caseDeadline(c) {
   return start.toISOString().slice(0, 10);
 }
 function evidenceIcon(type) {
+  if (/drogue/i.test(type || '')) return '&#127807;';
+  if (/telephone/i.test(type || '')) return '&#128241;';
+  if (/document/i.test(type || '')) return '&#128195;';
   if (/arme/i.test(type || '')) return '&#128299;';
   if (/vehicule/i.test(type || '')) return '&#128663;';
   if (/photo/i.test(type || '')) return '&#128247;';
   if (/video/i.test(type || '')) return '&#127909;';
   if (/audio/i.test(type || '')) return '&#127908;';
-  if (/drogue/i.test(type || '')) return '&#9670;';
-  if (/douille|empreinte|adn/i.test(type || '')) return '&#128269;';
+  if (/argent/i.test(type || '')) return '&#128181;';
+  if (/douille|munition/i.test(type || '')) return '&#128993;';
+  if (/empreinte|adn/i.test(type || '')) return '&#128269;';
+  if (/objet/i.test(type || '')) return '&#128230;';
   return '&#9635;';
+}
+function evidenceOptions(list, selected) {
+  return list.map(function(v) {
+    return '<option value="' + esc(v) + '"' + (v === selected ? ' selected' : '') + '>' + evidenceIcon(v) + ' ' + esc(v) + '</option>';
+  }).join('');
+}
+function money(v) {
+  var n = Number(v || 0);
+  if (!n) return '0 $';
+  return n.toLocaleString('fr-FR') + ' $';
+}
+function reportCharges(report) {
+  return (report && report.charges || []).map(function(ch) {
+    return typeof ch === 'string' ? { nom: ch, amende: '', prison: '' } : ch;
+  });
 }
 
 function chip(label, value) { return '<div class="chip"><span>' + esc(label) + '</span><strong>' + value + '</strong></div>'; }
@@ -877,29 +893,155 @@ function peopleTable(c, people) {
 function evidenceTable(c, proofs) {
   if (!proofs.length) return '<div class="text">Aucune preuve scellee.</div>';
   return '<table><thead><tr><th>Apercu</th><th>Scelle</th><th>Type</th><th>Infos</th></tr></thead><tbody>' + proofs.map(function(e) {
-    return '<tr class="clickable" onclick="' + callAttr('openEvidenceModal', c.id, e.id) + '"><td onclick="event.stopPropagation()">' + attachmentHtml(e.attachment, functionName('previewEvidence', c.id, e.id)) + '</td><td>' + esc(e.scelle || '-') + '</td><td>' + badge(e.type, 'gold') + '</td><td>' + esc(proofDetailsText(c, e) || e.description || '-') + '</td></tr>';
+    return '<tr class="clickable" onclick="' + callAttr('openEvidenceModal', c.id, e.id) + '"><td onclick="event.stopPropagation()">' + attachmentHtml(e.attachment, functionName('previewEvidence', c.id, e.id)) + '</td><td>' + esc(e.scelle || '-') + '</td><td>' + evidenceTypeBadge(e.type) + '</td><td>' + esc(proofDetailsText(c, e) || e.description || '-') + '</td></tr>';
   }).join('') + '</tbody></table>';
 }
 
 function renderPersonWorkspace(c, pid) {
   var p = (c.personnes || []).find(function(x) { return x.id === pid; });
   if (!p) return renderWorkspace(c);
-  var files = p.fichiers || [];
+  var tab = STATE.route.personTab || 'general';
   return [
     '<div class="workspace person-page">',
-      '<div class="workspace-head">',
-        '<div><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">Retour au dossier</button><div class="case-id" style="margin-top:12px">' + esc(c.numero) + ' - Fiche personne</div><h1>' + esc(p.nom) + '</h1><div class="subline"><span>' + esc(p.type || '-') + '</span><span>' + esc(p.tel || '-') + '</span>' + personLinkMeta(p) + '</div></div>',
-        '<div class="actions"><button class="btn btn-gold btn-small" onclick="' + callAttr('openPersonFileModal', c.id, p.id) + '">Ajouter fichier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deletePerson', c.id, p.id) + '">Supprimer</button></div>',
+      '<div class="person-profile-head">',
+        '<div class="person-profile-main">',
+          personAvatar(p, 'large'),
+          '<div><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">Retour au dossier</button><div class="case-id" style="margin-top:12px">' + esc(c.numero) + ' - Fiche personne</div><h1>' + esc(p.nom || 'Personne') + '</h1><div class="subline"><span>' + esc(p.type || '-') + '</span><span>' + esc(p.tel || '-') + '</span><span>' + totalArrests(p) + ' arrestation(s)</span><span>' + personReports(p, c).length + ' rapport(s) MDT</span>' + personLinkMeta(p) + '</div></div>',
+        '</div>',
+        '<div class="actions"><button class="btn btn-gold btn-small" onclick="' + callAttr('openPersonPhotoModal', c.id, p.id) + '">' + (p.photo ? 'Remplacer photo' : 'Ajouter une photo') + '</button>' + (p.photo ? '<button class="btn btn-red btn-small" onclick="' + callAttr('deletePersonPhoto', c.id, p.id) + '">Supprimer photo</button>' : '') + '<button class="btn btn-ghost btn-small" onclick="' + callAttr('openPersonFileModal', c.id, p.id) + '">Ajouter fichier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deletePerson', c.id, p.id) + '">Supprimer</button></div>',
       '</div>',
-      '<div class="detail-grid">',
-        '<section class="panel section"><h2>Identite</h2>' + personEditForm(c, p) + '</section>',
-        '<section class="panel section"><h2>Photos / fichiers</h2><div class="file-grid">' + (files.length ? files.map(function(f) { return fileCard(c, p, f); }).join('') : '<div class="text">Aucun fichier sur cette fiche.</div>') + '</div></section>',
-      '</div>',
+      personTabs(c, p, tab),
+      personTabContent(c, p, tab),
     '</div>'
   ].join('');
 }
 function personEditForm(c, p) {
-  return '<form id="personEditForm" class="person-edit-form" onsubmit="event.preventDefault();' + callAttr('savePersonProfile', c.id, p.id) + '"><div class="form-grid"><input name="nom" value="' + esc(p.nom) + '" placeholder="Nom / prenom"><select name="type">' + options(PERSON_TYPES, p.type || 'Citoyen') + '</select><input name="tel" value="' + esc(p.tel || '') + '" placeholder="Telephone"><input name="rapport_mdt" value="' + esc(p.rapport_mdt || '') + '" placeholder="Rapport MDT #"><input class="full" name="rapport_event_url" value="' + esc(p.rapport_event_url || '') + '" placeholder="Lien rapport evenement Discord"></div><textarea name="commentaires" rows="10" placeholder="Notes, habitudes, signalement, liens...">' + esc(p.commentaires || '') + '</textarea><button class="btn btn-blue btn-small">Sauvegarder</button></form>';
+  return '<form id="personEditForm" class="person-edit-form" onsubmit="event.preventDefault();' + callAttr('savePersonProfile', c.id, p.id) + '">' +
+    '<div class="form-grid">' +
+      '<input name="nom" value="' + esc(p.nom) + '" placeholder="Nom / prenom">' +
+      '<input name="alias" value="' + esc(p.alias || '') + '" placeholder="Alias">' +
+      '<select name="type">' + options(PERSON_TYPES, p.type || 'Citoyen') + '</select>' +
+      '<input name="date_naissance" value="' + esc(p.date_naissance || '') + '" placeholder="Date de naissance">' +
+      '<input name="tel" value="' + esc(p.tel || '') + '" placeholder="Telephone ex : 555-1234">' +
+      '<input name="adresse" value="' + esc(p.adresse || '') + '" placeholder="Adresse">' +
+      '<input name="profession" value="' + esc(p.profession || '') + '" placeholder="Profession">' +
+      '<input name="sexe" value="' + esc(p.sexe || '') + '" placeholder="Sexe">' +
+      '<input name="nationalite" value="' + esc(p.nationalite || '') + '" placeholder="Nationalite">' +
+      '<input name="organisation" value="' + esc(p.organisation || '') + '" placeholder="Groupe / organisation">' +
+      '<select name="dangerosite">' + options(['Inconnue','Faible','Moyenne','Elevee','Critique'], p.dangerosite || 'Inconnue') + '</select>' +
+      '<input name="statut_actuel" value="' + esc(p.statut_actuel || 'Actif') + '" placeholder="Statut actuel">' +
+      '<input name="permis" value="' + esc(p.permis || '') + '" placeholder="Permis">' +
+      '<select name="casier">' + options(['Non','Oui','A verifier'], p.casier || 'A verifier') + '</select>' +
+      '<input class="full" name="mandats" value="' + esc(p.mandats || '') + '" placeholder="Mandats actifs">' +
+      '<input class="full" name="rapport_event_url" value="' + esc(p.rapport_event_url || '') + '" placeholder="Lien rapport evenement Discord">' +
+    '</div>' +
+    '<textarea name="commentaires" rows="10" placeholder="Notes, habitudes, signalement, liens...">' + esc(p.commentaires || '') + '</textarea>' +
+    '<button class="btn btn-blue btn-small">Sauvegarder</button></form>';
+}
+function personTabs(c, p, active) {
+  var tabs = [
+    ['general', 'Informations generales'],
+    ['rapports', 'Rapports MDT'],
+    ['arrestations', 'Arrestations'],
+    ['charges', 'Chefs d inculpation'],
+    ['dossiers', 'Dossiers CID lies'],
+    ['preuves', 'Preuves liees'],
+    ['vehicules', 'Vehicules'],
+    ['mandats', 'Mandats'],
+    ['notes', 'Notes'],
+    ['journal', 'Journal des modifications']
+  ];
+  return '<div class="person-tabs">' + tabs.map(function(t) {
+    return '<button class="' + (active === t[0] ? 'active' : '') + '" onclick="' + callAttr('go', 'dossiers', { id: c.id, person: p.id, personTab: t[0] }) + '">' + esc(t[1]) + '</button>';
+  }).join('') + '</div>';
+}
+function personTabContent(c, p, tab) {
+  if (tab === 'rapports') return personReportsPanel(c, p, false);
+  if (tab === 'arrestations') return personReportsPanel(c, p, true);
+  if (tab === 'charges') return personChargesPanel(c, p);
+  if (tab === 'dossiers') return personLinkedCasesPanel(c, p);
+  if (tab === 'preuves') return personLinkedEvidencePanel(c, p, false);
+  if (tab === 'vehicules') return personLinkedEvidencePanel(c, p, true);
+  if (tab === 'mandats') return '<section class="panel section"><h2>Mandats</h2><p class="text preline">' + esc(p.mandats || 'Aucun mandat actif renseigne.') + '</p></section>';
+  if (tab === 'notes') return '<section class="panel section"><h2>Notes</h2><p class="text preline">' + esc(p.commentaires || 'Aucune note sur cette personne.') + '</p></section>';
+  if (tab === 'journal') return personJournalPanel(c, p);
+  return personGeneralPanel(c, p);
+}
+function personGeneralPanel(c, p) {
+  var reports = personReports(p, c);
+  var last = reports[0] && reports[0].date_arrestation || 'Aucune';
+  return [
+    '<div class="person-general-grid">',
+      '<section class="panel section person-identity-panel">',
+        '<div class="person-photo-large">' + personAvatar(p, 'large') + '</div>',
+        '<div class="person-metrics">',
+          chip('Derniere arrestation', esc(last)),
+          chip('Total arrestations', totalArrests(p)),
+          chip('Rapports MDT', reports.length),
+          chip('Mandats actifs', esc(p.mandats || '0')),
+        '</div>',
+      '</section>',
+      '<section class="panel section"><h2>Informations generales</h2>' + personEditForm(c, p) + '</section>',
+    '</div>',
+    personFilesPanel(c, p)
+  ].join('');
+}
+function personFilesPanel(c, p) {
+  var files = p.fichiers || [];
+  return '<section class="panel section"><div class="panel-head-mini"><div><div class="kicker">Pieces personne</div><h2>Photos / fichiers</h2></div><button class="btn btn-ghost btn-small" onclick="' + callAttr('openPersonFileModal', c.id, p.id) + '">Ajouter fichier</button></div>' + (files.length ? '<div class="file-grid">' + files.map(function(f) { return fileCard(c, p, f); }).join('') + '</div>' : '<p class="text">Aucun fichier sur cette fiche.</p>') + '</section>';
+}
+function personReportsPanel(c, p, arrestOnly) {
+  var reports = personReports(p, c);
+  if (arrestOnly) reports = reports.filter(function(r) { return r.date_arrestation || r.lieu || reportCharges(r).length; });
+  return '<section class="panel section judicial-panel"><div class="panel-head-mini"><div><div class="kicker">Historique judiciaire</div><h2>' + (arrestOnly ? 'Arrestations' : 'Rapports MDT') + '</h2></div><button class="btn btn-gold btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id) + '">+ Ajouter un rapport MDT</button></div>' + (reports.length ? '<div class="judicial-list">' + reports.map(function(r) { return reportCard(c, p, r); }).join('') + '</div>' : '<p class="text">Aucun rapport MDT ou arrestation renseigne.</p>') + '</section>';
+}
+function reportCard(c, p, r) {
+  var charges = reportCharges(r);
+  var chargeHtml = charges.length ? '<ul>' + charges.map(function(ch) { return '<li>' + esc(ch.nom || ch) + ' <span>' + money(ch.amende) + ' / ' + esc(ch.prison || 0) + ' UP</span></li>'; }).join('') + '</ul>' : '<p>Aucun chef renseigne.</p>';
+  return '<details class="judicial-card"><summary><div><strong>RAPPORT ' + esc(r.numero || 'MDT') + '</strong><span>' + esc(r.date_arrestation || 'Date non renseignee') + '</span></div>' + badge(r.statut || 'En cours', /condam/i.test(r.statut || '') ? 'green' : 'gold') + '</summary><div class="report-details">' +
+    '<div class="report-grid">' +
+      identityRow('Agent interpellateur', r.agent || '-') +
+      identityRow('Auteurs', r.auteurs || '-') +
+      identityRow('Dossier CID associe', r.dossier_cid || c.numero || '-') +
+      identityRow('Lieu', r.lieu || '-') +
+      identityRow('Amende', money(r.amende)) +
+      identityRow('Peine prison', (r.prison || 0) + ' UP') +
+    '</div>' +
+    '<h3>Chefs d inculpation</h3>' + chargeHtml +
+    '<h3>Resume des faits</h3><p class="text preline">' + esc(r.resume || '-') + '</p>' +
+    '<h3>Saisies / preuves</h3><p class="text preline">' + esc([r.saisies, r.preuves].filter(Boolean).join('\\n') || '-') + '</p>' +
+    '<h3>Decision procureur / tribunal</h3><p class="text preline">' + esc(r.decision || '-') + '</p>' +
+    '<h3>Notes complementaires</h3><p class="text preline">' + esc(r.notes || '-') + '</p>' +
+    '<div class="actions"><button class="btn btn-ghost btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id, r.id) + '">Modifier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deleteMdtReport', c.id, p.id, r.id) + '">Supprimer</button></div>' +
+  '</div></details>';
+}
+function personChargesPanel(c, p) {
+  var charges = [];
+  personReports(p, c).forEach(function(r) {
+    reportCharges(r).forEach(function(ch) { charges.push({ report: r.numero || 'MDT', charge: ch }); });
+  });
+  return '<section class="panel section"><h2>Chefs d inculpation</h2>' + (charges.length ? '<div class="charge-grid">' + charges.map(function(item) { return '<article class="charge-card"><strong>' + esc(item.charge.nom || item.charge) + '</strong><span>Rapport ' + esc(item.report) + '</span><em>' + money(item.charge.amende) + ' / ' + esc(item.charge.prison || 0) + ' UP</em></article>'; }).join('') + '</div>' : '<p class="text">Aucun chef d inculpation renseigne.</p>') + '</section>';
+}
+function personLinkedCasesPanel(c, p) {
+  var rows = casesLoad().filter(function(item) {
+    return (item.personnes || []).some(function(x) { return x.id === p.id || cleanDiscordDisplayName(x.nom).toLowerCase() === cleanDiscordDisplayName(p.nom).toLowerCase(); });
+  });
+  return '<section class="panel section"><h2>Dossiers CID lies</h2><div class="mini-list">' + (rows.length ? rows.map(function(item) { return '<button class="mini-row" onclick="' + callAttr('go', 'dossiers', { id: item.id }) + '"><span>' + esc(item.numero) + '</span><strong>' + caseTitleHtml(item) + '</strong>' + statusBadge(item.statut) + '</button>'; }).join('') : '<p class="text">Aucun dossier lie.</p>') + '</div></section>';
+}
+function personLinkedEvidencePanel(c, p, vehiclesOnly) {
+  var rows = (c.preuves || []).filter(function(e) {
+    var text = (e.description || '') + ' ' + proofDetailsText(c, e);
+    var linked = e.details && e.details.suspect_id === p.id || text.toLowerCase().indexOf(String(p.nom || '').toLowerCase()) !== -1;
+    return linked && (!vehiclesOnly || e.type === 'Vehicule');
+  });
+  return '<section class="panel section"><h2>' + (vehiclesOnly ? 'Vehicules' : 'Preuves liees') + '</h2>' + (rows.length ? '<div class="evidence-card-grid">' + rows.map(function(e) { return evidenceCard(c, e); }).join('') + '</div>' : '<p class="text">Aucun element lie.</p>') + '</section>';
+}
+function personJournalPanel(c, p) {
+  var items = (c.journal || []).filter(function(j) { return String(j.texte || '').toLowerCase().indexOf(String(p.nom || '').toLowerCase()) !== -1; });
+  return '<section class="panel section"><h2>Journal des modifications</h2><div class="note-list">' + (items.length ? items.map(function(j) { return '<div class="note-item"><strong>' + esc(j.date || '-') + '</strong><span>' + esc(j.texte || '') + '</span></div>'; }).join('') : '<div class="note-item">Aucun journal lie a cette personne.</div>') + '</div></section>';
+}
+function totalArrests(p) {
+  return personReports(p, null).filter(function(r) { return r.date_arrestation || r.lieu || reportCharges(r).length; }).length;
 }
 function personLinkMeta(p) {
   var items = [];
@@ -923,7 +1065,7 @@ function renderPeopleIndex() {
 function renderEvidenceIndex() {
   var rows = [];
   casesLoad().forEach(function(c) { (c.preuves || []).forEach(function(e) { rows.push({ c: c, e: e }); }); });
-  $('content').innerHTML = '<section class="panel section"><h2>Preuves CID</h2><table><thead><tr><th>Apercu</th><th>Scelle</th><th>Type</th><th>Infos</th><th>Dossier</th></tr></thead><tbody>' + (rows.length ? rows.map(function(r) { return '<tr class="clickable" onclick="' + callAttr('openEvidenceModal', r.c.id, r.e.id) + '"><td onclick="event.stopPropagation()">' + attachmentHtml(r.e.attachment, functionName('previewEvidence', r.c.id, r.e.id)) + '</td><td>' + esc(r.e.scelle) + '</td><td>' + badge(r.e.type, 'gold') + '</td><td>' + esc(proofDetailsText(r.c, r.e) || r.e.description || '-') + '</td><td>' + esc(r.c.numero) + '</td></tr>'; }).join('') : '<tr><td colspan="5">Aucune preuve.</td></tr>') + '</tbody></table></section>';
+  $('content').innerHTML = '<section class="panel section"><h2>Preuves CID</h2><table><thead><tr><th>Apercu</th><th>Scelle</th><th>Type</th><th>Infos</th><th>Dossier</th></tr></thead><tbody>' + (rows.length ? rows.map(function(r) { return '<tr class="clickable" onclick="' + callAttr('openEvidenceModal', r.c.id, r.e.id) + '"><td onclick="event.stopPropagation()">' + attachmentHtml(r.e.attachment, functionName('previewEvidence', r.c.id, r.e.id)) + '</td><td>' + esc(r.e.scelle) + '</td><td>' + evidenceTypeBadge(r.e.type) + '</td><td>' + esc(proofDetailsText(r.c, r.e) || r.e.description || '-') + '</td><td>' + esc(r.c.numero) + '</td></tr>'; }).join('') : '<tr><td colspan="5">Aucune preuve.</td></tr>') + '</tbody></table></section>';
 }
 
 function renderGestion() {
@@ -1128,7 +1270,31 @@ function savePerson(caseId) {
   var form = $('personForm');
   if (!form || !form.reportValidity()) return;
   var fd = new FormData($('personForm'));
-  var p = { id: uid('person'), nom: fd.get('nom'), type: fd.get('type'), tel: fd.get('tel') || '', discord_id: fd.get('discord_id') || '', rapport_mdt: fd.get('rapport_mdt') || '', rapport_event_url: fd.get('rapport_event_url') || '', commentaires: fd.get('commentaires') || '', fichiers: [] };
+  var p = {
+    id: uid('person'),
+    nom: fd.get('nom'),
+    type: fd.get('type'),
+    tel: fd.get('tel') || '',
+    discord_id: fd.get('discord_id') || '',
+    rapport_mdt: fd.get('rapport_mdt') || '',
+    rapport_event_url: fd.get('rapport_event_url') || '',
+    commentaires: fd.get('commentaires') || '',
+    alias: '',
+    date_naissance: '',
+    adresse: '',
+    profession: '',
+    sexe: '',
+    nationalite: '',
+    organisation: '',
+    dangerosite: 'Inconnue',
+    statut_actuel: 'Actif',
+    permis: '',
+    casier: 'A verifier',
+    mandats: '',
+    photo: null,
+    fichiers: [],
+    mdt_reports: []
+  };
   c.personnes = c.personnes || [];
   c.personnes.push(p);
   c.journal = c.journal || [];
@@ -1143,9 +1309,20 @@ function savePersonProfile(caseId, pid) {
   var p = c.personnes.find(function(x) { return x.id === pid; });
   var fd = new FormData($('personEditForm'));
   p.nom = fd.get('nom') || p.nom;
+  p.alias = fd.get('alias') || '';
   p.type = fd.get('type') || p.type;
+  p.date_naissance = fd.get('date_naissance') || '';
   p.tel = fd.get('tel') || '';
-  p.rapport_mdt = fd.get('rapport_mdt') || '';
+  p.adresse = fd.get('adresse') || '';
+  p.profession = fd.get('profession') || '';
+  p.sexe = fd.get('sexe') || '';
+  p.nationalite = fd.get('nationalite') || '';
+  p.organisation = fd.get('organisation') || '';
+  p.dangerosite = fd.get('dangerosite') || 'Inconnue';
+  p.statut_actuel = fd.get('statut_actuel') || 'Actif';
+  p.permis = fd.get('permis') || '';
+  p.casier = fd.get('casier') || 'A verifier';
+  p.mandats = fd.get('mandats') || '';
   p.rapport_event_url = fd.get('rapport_event_url') || '';
   p.commentaires = fd.get('commentaires') || '';
   caseUpsert(c);
@@ -1162,6 +1339,148 @@ function confirmDeletePerson(caseId, pid) {
   closeModal();
   renderApp();
 }
+function openPersonPhotoModal(caseId, pid) {
+  openModal('Photo de profil', '<form id="personPhotoForm"><div class="form-grid"><input class="full" name="photo" type="file" accept="image/*" required><div id="personPhotoError" class="form-error full"></div></div></form>',
+    '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button><button type="button" class="btn btn-gold" onclick="' + callAttr('savePersonPhoto', caseId, pid) + '">Sauvegarder</button>');
+}
+async function savePersonPhoto(caseId, pid) {
+  try {
+    setModalError('personPhotoError', '');
+    var c = caseGet(caseId);
+    var p = c && (c.personnes || []).find(function(x) { return x.id === pid; });
+    if (!p) throw new Error('Personne introuvable.');
+    var photo = await readFile($('personPhotoForm').querySelector('input[type=file]'));
+    if (!photo) throw new Error('Selectionne une image.');
+    applyPersonPhotoEverywhere(p, photo);
+    closeModal();
+    renderApp();
+  } catch (e) {
+    setModalError('personPhotoError', e.message || 'Impossible de sauvegarder la photo.');
+  }
+}
+function deletePersonPhoto(caseId, pid) {
+  openConfirmModal('Supprimer la photo', 'La photo de profil de cette personne sera retiree.', 'danger', callAttr('confirmDeletePersonPhoto', caseId, pid));
+}
+function confirmDeletePersonPhoto(caseId, pid) {
+  var c = caseGet(caseId);
+  var p = c && (c.personnes || []).find(function(x) { return x.id === pid; });
+  if (p) applyPersonPhotoEverywhere(p, null);
+  closeModal();
+  renderApp();
+}
+function applyPersonPhotoEverywhere(reference, photo) {
+  var refName = cleanDiscordDisplayName(reference.nom || '').toLowerCase();
+  var all = casesLoad();
+  all.forEach(function(item) {
+    (item.personnes || []).forEach(function(p) {
+      var sameId = p.id === reference.id;
+      var sameName = refName && cleanDiscordDisplayName(p.nom || '').toLowerCase() === refName;
+      if (sameId || sameName) p.photo = photo;
+    });
+  });
+  casesSave(all);
+}
+function chargeOptions(selected) {
+  selected = selected || [];
+  return '<input class="full" id="chargeSearch" type="search" placeholder="Rechercher une infraction..." oninput="filterChargeCatalog(this.value)"><div class="charge-picker" id="chargePicker">' + CHARGES_CATALOG.map(function(ch, i) {
+    var checked = selected.some(function(s) { return (s.nom || s) === ch.nom; });
+    return '<label data-charge="' + esc(ch.nom.toLowerCase()) + '"><input type="checkbox" name="charges" value="' + esc(ch.nom) + '"' + (checked ? ' checked' : '') + '><span><strong>' + esc(ch.nom) + '</strong><em>' + money(ch.amende) + ' / ' + ch.prison + ' UP</em></span></label>';
+  }).join('') + '</div>';
+}
+function filterChargeCatalog(value) {
+  var q = String(value || '').toLowerCase();
+  Array.prototype.forEach.call(document.querySelectorAll('#chargePicker label'), function(label) {
+    label.style.display = !q || String(label.getAttribute('data-charge') || '').indexOf(q) !== -1 ? '' : 'none';
+  });
+}
+function openMdtReportModal(caseId, pid, reportId) {
+  var c = caseGet(caseId);
+  var p = c && (c.personnes || []).find(function(x) { return x.id === pid; });
+  if (!p) return;
+  var reports = p.mdt_reports || [];
+  var r = reportId ? reports.find(function(x) { return x.id === reportId; }) : null;
+  var selectedCharges = reportCharges(r);
+  openModal(r ? 'Modifier le rapport MDT' : 'Ajouter un rapport MDT',
+    '<form id="mdtReportForm"><div class="form-grid">' +
+      '<input name="numero" placeholder="Numero du rapport MDT" value="' + esc(r && r.numero || '') + '">' +
+      '<input name="date_arrestation" type="datetime-local" value="' + esc(toDateTimeLocal(r && r.date_arrestation || '')) + '">' +
+      '<input name="agent" placeholder="Unite ou agent interpellateur" value="' + esc(r && r.agent || '') + '">' +
+      '<input name="auteurs" placeholder="Auteurs du rapport" value="' + esc(r && r.auteurs || '') + '">' +
+      '<input name="dossier_cid" placeholder="Dossier CID associe" value="' + esc(r && r.dossier_cid || c.numero || '') + '">' +
+      '<input name="lieu" placeholder="Lieu de l arrestation" value="' + esc(r && r.lieu || '') + '">' +
+      '<select name="statut">' + options(['En cours','Transmis procureur','Condamne','Relaxe','Classe'], r && r.statut || 'En cours') + '</select>' +
+      '<input name="amende" type="number" min="0" placeholder="Amendes totales" value="' + esc(r && r.amende || '') + '">' +
+      '<input name="prison" type="number" min="0" placeholder="Peine de prison / UP" value="' + esc(r && r.prison || '') + '">' +
+      '<input name="custom_charge" placeholder="Chef personnalise exceptionnel" value="">' +
+      '<div class="full"><div class="field"><span>Chefs d inculpation</span>' + chargeOptions(selectedCharges) + '</div></div>' +
+      '<textarea class="full" name="resume" rows="4" placeholder="Resume des faits">' + esc(r && r.resume || '') + '</textarea>' +
+      '<textarea class="full" name="saisies" rows="3" placeholder="Saisies effectuees">' + esc(r && r.saisies || '') + '</textarea>' +
+      '<textarea class="full" name="preuves" rows="3" placeholder="Preuves liees">' + esc(r && r.preuves || '') + '</textarea>' +
+      '<textarea class="full" name="decision" rows="3" placeholder="Decision procureur ou tribunal">' + esc(r && r.decision || '') + '</textarea>' +
+      '<textarea class="full" name="notes" rows="3" placeholder="Notes complementaires">' + esc(r && r.notes || '') + '</textarea>' +
+    '</div></form>',
+    '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>' +
+    (r ? '<button type="button" class="btn btn-red" onclick="' + callAttr('deleteMdtReport', caseId, pid, r.id) + '">Supprimer</button>' : '') +
+    '<button type="button" class="btn btn-gold" onclick="' + callAttr('saveMdtReport', caseId, pid, reportId || '') + '">Sauvegarder</button>');
+}
+function saveMdtReport(caseId, pid, reportId) {
+  var c = caseGet(caseId);
+  var p = c && (c.personnes || []).find(function(x) { return x.id === pid; });
+  if (!p) return;
+  var fd = new FormData($('mdtReportForm'));
+  var selected = fd.getAll('charges');
+  var charges = selected.map(function(name) {
+    var found = CHARGES_CATALOG.find(function(ch) { return ch.nom === name; }) || { nom: name, amende: 0, prison: 0 };
+    return { nom: found.nom, amende: found.amende, prison: found.prison };
+  });
+  var custom = String(fd.get('custom_charge') || '').trim();
+  if (custom) charges.push({ nom: custom, amende: 0, prison: 0, custom: true });
+  p.mdt_reports = p.mdt_reports || [];
+  var r = reportId ? p.mdt_reports.find(function(x) { return x.id === reportId; }) : null;
+  if (!r) {
+    r = { id: uid('mdt') };
+    p.mdt_reports.unshift(r);
+  }
+  r.numero = fd.get('numero') || ('MDT-' + new Date().getFullYear() + '-' + String(p.mdt_reports.length).padStart(4, '0'));
+  r.date_arrestation = fromDateTimeLocal(fd.get('date_arrestation') || '');
+  r.agent = fd.get('agent') || '';
+  r.auteurs = fd.get('auteurs') || '';
+  r.dossier_cid = fd.get('dossier_cid') || c.numero || '';
+  r.lieu = fd.get('lieu') || '';
+  r.statut = fd.get('statut') || 'En cours';
+  r.resume = fd.get('resume') || '';
+  r.charges = charges;
+  r.amende = fd.get('amende') || charges.reduce(function(sum, ch) { return sum + Number(ch.amende || 0); }, 0);
+  r.prison = fd.get('prison') || charges.reduce(function(sum, ch) { return sum + Number(ch.prison || 0); }, 0);
+  r.saisies = fd.get('saisies') || '';
+  r.preuves = fd.get('preuves') || '';
+  r.decision = fd.get('decision') || '';
+  r.notes = fd.get('notes') || '';
+  c.journal = c.journal || [];
+  c.journal.unshift({ date: nowLabel(), texte: 'Rapport MDT mis a jour pour ' + (p.nom || 'personne') + ': ' + r.numero, type: 'system' });
+  caseUpsert(c);
+  closeModal();
+  STATE.route = { page: 'dossiers', id: c.id, person: p.id, personTab: 'rapports' };
+  renderApp();
+}
+function deleteMdtReport(caseId, pid, reportId) {
+  openConfirmModal('Supprimer le rapport MDT', 'Ce rapport sera retire de l historique judiciaire de cette personne.', 'danger', callAttr('confirmDeleteMdtReport', caseId, pid, reportId));
+}
+function confirmDeleteMdtReport(caseId, pid, reportId) {
+  var c = caseGet(caseId);
+  var p = c && (c.personnes || []).find(function(x) { return x.id === pid; });
+  if (p) p.mdt_reports = (p.mdt_reports || []).filter(function(r) { return r.id !== reportId; });
+  caseUpsert(c);
+  closeModal();
+  renderApp();
+}
+function toDateTimeLocal(value) {
+  if (!value) return '';
+  return String(value).replace(' ', 'T').slice(0, 16);
+}
+function fromDateTimeLocal(value) {
+  return value ? String(value).replace('T', ' ') : '';
+}
 
 function openEvidenceModal(caseId, evidenceId) {
   var c = caseGet(caseId);
@@ -1171,7 +1490,7 @@ function openEvidenceModal(caseId, evidenceId) {
   var suspects = '<option value="">Non attribue</option>' + (c.personnes || []).filter(function(p) { return p.type === 'Suspect'; }).map(function(p) { return '<option value="' + esc(p.id) + '"' + (p.id === suspectId ? ' selected' : '') + '>' + esc(p.nom) + '</option>'; }).join('');
   openModal(e ? 'Modifier la preuve' : 'Ajouter une preuve',
     '<form id="evidenceForm"><div class="form-grid">' +
-      '<select name="type" id="evidenceType" onchange="toggleEvidenceFields()">' + options(managedOptions('types_preuves'), e && e.type || 'Photo') + '</select>' +
+      '<select name="type" id="evidenceType" onchange="toggleEvidenceFields()">' + evidenceOptions(managedOptions('types_preuves'), e && e.type || 'Photo') + '</select>' +
       '<div id="fileField"><input name="fichier" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">' + (e && e.attachment ? '<div class="text mini">Fichier actuel : ' + esc(e.attachment.name || 'piece jointe') + '</div>' : '') + '</div>' +
       '<div id="weaponFields" class="form-grid full hidden"><input name="type_arme" placeholder="Type d\'arme" value="' + esc(d.type_arme || '') + '"><input name="numero_serie" placeholder="Numero de serie" value="' + esc(d.numero_serie || '') + '"><select name="suspect_arme">' + suspects + '</select></div>' +
       '<div id="drugFields" class="form-grid full hidden"><input name="type_drogue" placeholder="Type de drogue" value="' + esc(d.type_drogue || '') + '"><input name="quantite" placeholder="Quantite" value="' + esc(d.quantite || '') + '"><select name="suspect_drogue">' + suspects + '</select></div>' +
