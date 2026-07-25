@@ -1055,6 +1055,15 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 10px;
 }
+.person-card-list,
+.case-report-grid,
+.judicial-list {
+  display: grid;
+  gap: 12px;
+}
+.case-report-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .person-card,
 .evidence-card {
   border: 1px solid rgba(91,139,190,.20);
@@ -1074,6 +1083,54 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
   grid-template-columns: 46px minmax(0, 1fr) auto;
   gap: 10px;
   align-items: start;
+}
+.person-card-wide {
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  cursor: default;
+}
+.person-card-open {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.person-card-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.person-card-title strong {
+  display: block;
+  color: #fff;
+  font-size: 16px;
+}
+.person-card-title span {
+  display: block;
+  margin-top: 3px;
+  color: #8eb5e4;
+  font-size: 12px;
+}
+.person-card-info,
+.person-card-counts,
+.case-report-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 10px;
+  color: #8eb5e4;
+  font-size: 12px;
+}
+.person-card-info strong,
+.person-card-counts span {
+  color: #d9e9ff;
+}
+.person-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 .person-avatar {
   width: 44px;
@@ -1163,6 +1220,95 @@ img.person-avatar.large {
   border-radius: 10px;
   background: rgba(7, 14, 23, .58);
   overflow: hidden;
+}
+.case-report-card,
+.mdt-link-card {
+  border: 1px solid rgba(216,182,71,.18);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(216,182,71,.06), rgba(7,14,23,.72));
+  padding: 13px;
+}
+.case-report-card h3,
+.mdt-link-card h3 {
+  margin: 10px 0 7px;
+  color: #fff;
+  font-size: 15px;
+}
+.case-report-card p,
+.mdt-link-card p {
+  margin: 8px 0 0;
+}
+.case-report-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.case-report-top strong {
+  color: var(--gold);
+  letter-spacing: .08em;
+}
+.case-report-meta button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #9bc7ff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.report-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.report-detail-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin: 14px 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(216,182,71,.14);
+}
+.report-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr);
+  gap: 14px;
+}
+.report-detail-main h3 {
+  margin: 18px 0 8px;
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.report-side-grid {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.report-block {
+  padding: 14px;
+}
+.report-block h2 {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.linked-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.linked-chip {
+  border: 1px solid rgba(91,139,190,.26);
+  border-radius: 999px;
+  background: rgba(7,14,23,.62);
+  color: #dbeaff;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.linked-chip:hover {
+  border-color: rgba(216,182,71,.55);
+  color: var(--gold);
 }
 .judicial-card summary {
   display: flex;
@@ -1270,7 +1416,9 @@ img.person-avatar.large {
   .mdt-grid, .detail-grid, .wide-grid { grid-template-columns: 1fr; }
   .person-profile-head,
   .person-general-grid,
-  .report-grid { grid-template-columns: 1fr; }
+  .report-grid,
+  .report-detail-layout,
+  .case-report-grid { grid-template-columns: 1fr; }
   .dashboard-grid, .chip-grid, .gestion-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .topbar { grid-template-columns: 1fr; }
   .cid-intel-cards { grid-template-columns: repeat(3, minmax(120px, 1fr)); }
@@ -1285,6 +1433,9 @@ img.person-avatar.large {
   .workspace-head { grid-template-columns: 1fr; }
   .person-profile-main { align-items: flex-start; }
   .actions { justify-content: flex-start; }
+  .person-card-wide { grid-template-columns: 48px minmax(0, 1fr); }
+  .person-card-actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .report-detail-head { display: grid; }
   .case-command-bar { justify-content: flex-start; flex-wrap: wrap; }
   .command-btn { flex: 1 1 96px; }
   .command-divider { display: none; }
