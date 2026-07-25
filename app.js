@@ -380,7 +380,7 @@ function renderSearchResults() {
         }
         personReports(p, c).forEach(function(r) {
           if (matchText(reportSearchText(r), q)) {
-            results.push({ type: 'Rapport MDT', title: (r.numero || 'MDT') + ' - ' + (r.titre || 'Rapport lie'), meta: (c.numero || '-') + ' - ' + (p.nom || '-') + ' - ' + searchContext([r.type, r.statut, r.agent, r.agents_impliques, r.charges_text, r.resume], q), action: callAttr('openSearchResult', 'dossiers', { id: c.id, report: r.id, person: p.id }) });
+            results.push({ type: 'Rapport MDT', title: (r.numero || 'MDT') + ' - ' + (r.titre || 'Rapport MDT'), meta: (c.numero || '-') + ' - ' + (p.nom || '-'), action: callAttr('openSearchResult', 'dossiers', { id: c.id, person: p.id }) });
           }
         });
         (p.fichiers || []).forEach(function(f) {
@@ -764,7 +764,7 @@ function personCard(c, p) {
           '<span>Dangerosite : <strong>' + esc(danger) + '</strong></span>',
           '<span>Statut : <strong>' + esc(p.statut_actuel || 'Actif') + '</strong></span>',
         '</div>',
-        '<div class="person-card-counts"><span>' + reports.length + ' rapport(s) MDT lie(s)</span><span>' + seizures + ' saisie(s) / preuve(s) liee(s)</span></div>',
+        '<div class="person-card-counts"><span>' + reports.length + ' rapport(s) MDT</span><span>' + seizures + ' saisie(s) / preuve(s) liee(s)</span></div>',
       '</div>',
       '<div class="person-card-actions">',
         '<button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id, person: p.id }) + '">Fiche</button>',
@@ -784,22 +784,14 @@ function evidenceCard(c, e) {
 }
 function caseReportsPanel(c, full) {
   var rows = allCaseReports(c);
-  return '<section class="panel section cid-reports-panel ' + (full ? 'full' : '') + '"><div class="panel-head-mini"><div><div class="kicker">Rapports MDT</div><h2>Rapports MDT lies</h2></div></div>' + (rows.length ? '<div class="case-report-grid">' + rows.map(function(row) { return caseReportCard(c, row.person, row.report); }).join('') + '</div>' : '<p class="text">Aucun rapport MDT lie a ce dossier.</p>') + '</section>';
+  return '<section class="panel section cid-reports-panel ' + (full ? 'full' : '') + '"><div class="panel-head-mini"><div><div class="kicker">Rapports MDT</div><h2>Rapports MDT</h2></div></div>' + (rows.length ? '<div class="case-report-grid">' + rows.map(function(row) { return caseReportCard(c, row.person, row.report); }).join('') + '</div>' : '<p class="text">Aucun rapport MDT.</p>') + '</section>';
 }
 function caseReportCard(c, p, r) {
-  var title = r.titre || r.resume || 'Rapport MDT lie';
+  var title = r.titre || 'Rapport MDT';
   return [
     '<article class="case-report-card">',
-      '<div class="case-report-top"><strong>RAPPORT MDT #' + esc(reportNumber(r)) + '</strong>' + badge(r.statut || 'Rapport lie', /clot|condam|classe/i.test(r.statut || '') ? 'green' : 'gold') + '</div>',
+      '<div class="case-report-top"><strong>RAPPORT MDT #' + esc(reportNumber(r)) + '</strong></div>',
       '<h3>' + esc(title) + '</h3>',
-      '<p>' + esc(r.resume || 'Aucun resume court renseigne.') + '</p>',
-      '<div class="case-report-meta">',
-        '<span>Personne liee : <button onclick="' + callAttr('go', 'dossiers', { id: c.id, person: p.id }) + '">' + esc(p.nom || '-') + '</button></span>',
-        '<span>Agent : <strong>' + esc(r.agent || r.auteur || '-') + '</strong></span>',
-        '<span>Type : <strong>' + esc(r.type || 'Rapport MDT') + '</strong></span>',
-        '<span>Date : <strong>' + esc(r.date_rapport || r.date_arrestation || '-') + '</strong></span>',
-      '</div>',
-      '<div class="actions"><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id, report: r.id, person: p.id }) + '">Voir les details</button></div>',
     '</article>'
   ].join('');
 }
@@ -977,7 +969,7 @@ function renderPersonWorkspace(c, pid) {
           personAvatar(p, 'large'),
           '<div><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">Retour au dossier</button><div class="case-id" style="margin-top:12px">' + esc(c.numero) + ' - Fiche personne</div><h1>' + esc(p.nom || 'Personne') + '</h1><div class="subline"><span>' + esc(p.type || '-') + '</span><span>' + esc(p.tel || '-') + '</span><span>Dangerosite : ' + esc(p.dangerosite || 'Inconnue') + '</span><span>' + reports.length + ' rapport(s) MDT</span></div></div>',
         '</div>',
-        '<div class="actions"><button class="btn btn-gold btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id) + '">Lier rapport MDT</button><button class="btn btn-ghost btn-small" onclick="' + callAttr('openPersonPhotoModal', c.id, p.id) + '">' + (p.photo ? 'Remplacer photo' : 'Ajouter photo') + '</button>' + (p.photo ? '<button class="btn btn-red btn-small" onclick="' + callAttr('deletePersonPhoto', c.id, p.id) + '">Supprimer photo</button>' : '') + '<button class="btn btn-ghost btn-small" onclick="' + callAttr('openPersonFileModal', c.id, p.id) + '">Ajouter fichier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deletePerson', c.id, p.id) + '">Supprimer</button></div>',
+        '<div class="actions"><button class="btn btn-gold btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id) + '">Rapport MDT</button><button class="btn btn-ghost btn-small" onclick="' + callAttr('openPersonPhotoModal', c.id, p.id) + '">' + (p.photo ? 'Remplacer photo' : 'Ajouter photo') + '</button>' + (p.photo ? '<button class="btn btn-red btn-small" onclick="' + callAttr('deletePersonPhoto', c.id, p.id) + '">Supprimer photo</button>' : '') + '<button class="btn btn-ghost btn-small" onclick="' + callAttr('openPersonFileModal', c.id, p.id) + '">Ajouter fichier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deletePerson', c.id, p.id) + '">Supprimer</button></div>',
       '</div>',
       personTabs(c, p, tab),
       personTabContent(c, p, tab),
@@ -1015,8 +1007,8 @@ function renderMdtReportWorkspace(c, reportId) {
     '<div class="workspace report-workspace">',
       '<button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">Retour au dossier</button>',
       '<div class="report-detail-head">',
-        '<div><div class="case-id">Rapport MDT lie</div><h1>' + esc(r.numero || 'MDT') + ' - ' + esc(r.titre || 'Rapport') + '</h1><div class="subline"><span>' + esc(c.numero) + '</span><span>Personne liee : ' + esc(p.nom || '-') + '</span><span>' + esc(r.statut || 'Rapport lie') + '</span></div></div>',
-        '<div class="actions"><button class="btn btn-ghost btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id, r.id) + '">Modifier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deleteMdtReport', c.id, p.id, r.id) + '">Dissocier</button></div>',
+        '<div><div class="case-id">Rapport MDT</div><h1>' + esc(r.numero || 'MDT') + ' - ' + esc(r.titre || 'Rapport') + '</h1><div class="subline"><span>' + esc(c.numero) + '</span><span>' + esc(p.nom || '-') + '</span></div></div>',
+        '<div class="actions"><button class="btn btn-ghost btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id, r.id) + '">Modifier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deleteMdtReport', c.id, p.id, r.id) + '">Supprimer</button></div>',
       '</div>',
       '<div class="report-detail-layout">',
         '<section class="panel section report-detail-main">',
@@ -1025,7 +1017,7 @@ function renderMdtReportWorkspace(c, reportId) {
             identityRow('Numero', r.numero || 'MDT'),
             identityRow('Type', r.type || 'Rapport MDT'),
             identityRow('Date', r.date_rapport || r.date_arrestation || '-'),
-            identityRow('Statut', r.statut || 'Rapport lie'),
+            identityRow('Statut', r.statut || '-'),
             identityRow('Agent redacteur', r.agent || '-'),
           '</div>',
           '<h3>Resume / description</h3><p class="text preline">' + esc(r.resume || 'Aucun resume renseigne.') + '</p>',
@@ -1119,22 +1111,13 @@ function personFilesPanel(c, p) {
 function personReportsPanel(c, p, arrestOnly) {
   var reports = personReports(p, c);
   if (arrestOnly) reports = reports.filter(function(r) { return r.date_arrestation || r.lieu || reportCharges(r).length; });
-  return '<section class="panel section judicial-panel"><div class="panel-head-mini"><div><div class="kicker">Historique judiciaire</div><h2>Rapports MDT</h2></div><button class="btn btn-gold btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id) + '">+ Lier un rapport MDT</button></div>' + (reports.length ? '<div class="judicial-list">' + reports.map(function(r) { return reportCard(c, p, r); }).join('') + '</div>' : '<p class="text">Aucun rapport MDT lie a cette personne.</p>') + '</section>';
+  return '<section class="panel section judicial-panel"><div class="panel-head-mini"><div><div class="kicker">Historique judiciaire</div><h2>Rapports MDT</h2></div><button class="btn btn-gold btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id) + '">+ Rapport MDT</button></div>' + (reports.length ? '<div class="judicial-list">' + reports.map(function(r) { return reportCard(c, p, r); }).join('') + '</div>' : '<p class="text">Aucun rapport MDT.</p>') + '</section>';
 }
 function reportCard(c, p, r) {
-  var charges = r.charges_text || reportCharges(r).map(function(ch) { return ch.nom || ch; }).join(', ');
   return '<article class="judicial-card mdt-link-card">' +
-    '<div class="case-report-top"><strong>RAPPORT MDT #' + esc(reportNumber(r)) + '</strong>' + badge(r.statut || 'Rapport lie', /condam|classe|clos/i.test(r.statut || '') ? 'green' : 'gold') + '</div>' +
-    '<h3>' + esc(r.titre || 'Rapport MDT lie') + '</h3>' +
-    '<div class="report-grid compact">' +
-      identityRow('Type', r.type || 'Rapport MDT') +
-      identityRow('Date', r.date_rapport || r.date_arrestation || '-') +
-      identityRow('Agent redacteur', r.agent || '-') +
-      identityRow('Dossier CID', r.dossier_cid || c.numero || '-') +
-      identityRow('Chefs', charges || '-') +
-    '</div>' +
-    '<p class="text preline">' + esc(r.resume || 'Aucun resume court renseigne.') + '</p>' +
-    '<div class="actions"><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id, report: r.id, person: p.id }) + '">Voir les details</button><button class="btn btn-ghost btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id, r.id) + '">Modifier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deleteMdtReport', c.id, p.id, r.id) + '">Dissocier</button></div>' +
+    '<div class="case-report-top"><strong>RAPPORT MDT #' + esc(reportNumber(r)) + '</strong></div>' +
+    '<h3>' + esc(r.titre || 'Rapport MDT') + '</h3>' +
+    '<div class="actions"><button class="btn btn-ghost btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id, r.id) + '">Modifier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deleteMdtReport', c.id, p.id, r.id) + '">Supprimer</button></div>' +
   '</article>';
 }
 function personChargesPanel(c, p) {
@@ -1509,14 +1492,10 @@ function openMdtReportModal(caseId, pid, reportId) {
     '<form id="mdtReportForm"><div class="form-grid">' +
       '<input name="numero" placeholder="Numero du rapport MDT" value="' + esc(r && r.numero || '') + '">' +
       '<input name="titre" placeholder="Titre du rapport" value="' + esc(r && r.titre || '') + '">' +
-      '<input name="date_rapport" type="datetime-local" value="' + esc(toDateTimeLocal(r && (r.date_rapport || r.date_arrestation) || '')) + '">' +
-      '<input name="agent" placeholder="Agent redacteur" value="' + esc(r && r.agent || '') + '">' +
-      '<textarea class="full" name="charges_text" rows="3" placeholder="Chefs d inculpation">' + esc(r && (r.charges_text || reportCharges(r).map(function(ch) { return ch.nom || ch; }).join('\\n')) || '') + '</textarea>' +
-      '<textarea class="full" name="resume" rows="5" placeholder="Resume facultatif">' + esc(r && r.resume || '') + '</textarea>' +
     '</div></form>',
     '<button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>' +
-    (r ? '<button type="button" class="btn btn-red" onclick="' + callAttr('deleteMdtReport', caseId, pid, r.id) + '">Dissocier</button>' : '') +
-    '<button type="button" class="btn btn-gold" onclick="' + callAttr('saveMdtReport', caseId, pid, reportId || '') + '">' + (r ? 'Sauvegarder' : 'Lier le rapport') + '</button>');
+    (r ? '<button type="button" class="btn btn-red" onclick="' + callAttr('deleteMdtReport', caseId, pid, r.id) + '">Supprimer</button>' : '') +
+    '<button type="button" class="btn btn-gold" onclick="' + callAttr('saveMdtReport', caseId, pid, reportId || '') + '">' + (r ? 'Sauvegarder' : 'Ajouter') + '</button>');
 }
 function saveMdtReport(caseId, pid, reportId) {
   var c = caseGet(caseId);
@@ -1531,17 +1510,17 @@ function saveMdtReport(caseId, pid, reportId) {
   }
   r.numero = fd.get('numero') || ('MDT-' + new Date().getFullYear() + '-' + String(p.mdt_reports.length).padStart(4, '0'));
   r.titre = fd.get('titre') || '';
-  r.type = r.type || 'Rapport MDT';
-  r.date_rapport = fromDateTimeLocal(fd.get('date_rapport') || '');
-  r.date_arrestation = r.date_rapport;
-  r.agent = fd.get('agent') || '';
-  r.agents_impliques = r.agents_impliques || '';
-  r.auteurs = r.agents_impliques;
+  r.type = 'Rapport MDT';
+  r.date_rapport = '';
+  r.date_arrestation = '';
+  r.agent = '';
+  r.agents_impliques = '';
+  r.auteurs = '';
   r.dossier_cid = c.numero || '';
-  r.statut = r.statut || '';
-  r.charges_text = fd.get('charges_text') || '';
-  r.charges = r.charges_text ? String(r.charges_text).split(/\n|,/).map(function(name) { return { nom: name.trim(), amende: '', prison: '' }; }).filter(function(ch) { return ch.nom; }) : [];
-  r.resume = fd.get('resume') || '';
+  r.statut = '';
+  r.charges_text = '';
+  r.charges = [];
+  r.resume = '';
   c.journal = c.journal || [];
   c.journal.unshift({ date: nowLabel(), texte: 'Rapport MDT mis a jour pour ' + (p.nom || 'personne') + ': ' + r.numero, type: 'system' });
   caseUpsert(c);
@@ -1550,7 +1529,7 @@ function saveMdtReport(caseId, pid, reportId) {
   renderApp();
 }
 function deleteMdtReport(caseId, pid, reportId) {
-  openConfirmModal('Supprimer le rapport MDT', 'Ce rapport sera retire de l historique judiciaire de cette personne.', 'danger', callAttr('confirmDeleteMdtReport', caseId, pid, reportId));
+  openConfirmModal('Supprimer le rapport MDT', 'Ce rapport sera supprime de cette personne.', 'danger', callAttr('confirmDeleteMdtReport', caseId, pid, reportId));
 }
 function confirmDeleteMdtReport(caseId, pid, reportId) {
   var c = caseGet(caseId);
