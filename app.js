@@ -1,4 +1,4 @@
-var WORKER_BASE = 'https://sasp-intranet-bot.louisleurin.workers.dev';
+﻿var WORKER_BASE = 'https://sasp-intranet-bot.louisleurin.workers.dev';
 var CID_STORE_KEY = 'sasp_cid_cases_v2';
 var CID_DEMO_SEEDED_KEY = 'sasp_cid_demo_seeded_v1';
 var MAX_ATTACHMENT_BYTES = 1800000;
@@ -263,14 +263,15 @@ function renderApp() {
         '<div class="sidebar-foot"><strong>Discord</strong><br>Connecte et autorise</div>',
         '<nav class="nav">',
           '<div class="nav-title">Menu principal</div>',
-          navButton('dashboard', 'Accueil', '⌂'),
+          navButton('dashboard', 'Accueil', 'âŒ‚'),
+          navButton('guide', 'Guide CID', '§'),
           '<div class="nav-group"><span>CID</span></div>',
-          navButton('dossiers', 'Dossiers', '▣'),
-          navButton('personnes', 'Personnes', '♙'),
-          navButton('preuves', 'Preuves', '◆'),
-          navButton('gestion', 'Gestion', '⚙'),
+          navButton('dossiers', 'Dossiers', 'â–£'),
+          navButton('personnes', 'Personnes', 'â™™'),
+          navButton('preuves', 'Preuves', 'â—†'),
+          navButton('gestion', 'Gestion', 'âš™'),
           '<div class="nav-group"><span>Historique</span></div>',
-          navButton('archives', 'Archives', '▤'),
+          navButton('archives', 'Archives', 'â–¤'),
         '</nav>',
       '</aside>',
       '<main class="main">',
@@ -314,6 +315,7 @@ function allFiltered(includeArchived) {
 function renderContent() {
   if (STATE.route.page === 'search') return renderSearchResults();
   if (STATE.route.page === 'dashboard') return renderDashboard();
+  if (STATE.route.page === 'guide') return renderGuide();
   if (STATE.route.page === 'personnes') return renderPeopleIndex();
   if (STATE.route.page === 'preuves') return renderEvidenceIndex();
   if (STATE.route.page === 'gestion') return renderGestion();
@@ -405,6 +407,131 @@ function openSearchResult(page, extra) {
   renderApp();
 }
 
+function renderGuide() {
+  $('content').innerHTML = [
+    '<section class="guide-hero panel section">',
+      '<div>',
+        '<div class="kicker">Guide CID</div>',
+        '<h1>Manuel complet pour agents debutants</h1>',
+        '<p class="text">Ce guide explique comment utiliser le MDT CID : creation de dossiers, personnes liees, preuves, notes, recherche, archives et gestion des listes.</p>',
+      '</div>',
+      '<div class="guide-quick">',
+        '<button class="btn btn-gold" onclick="' + callAttr('go', 'dossiers') + '">Ouvrir les dossiers</button>',
+        '<button class="btn btn-ghost" onclick="' + callAttr('go', 'personnes') + '">Voir les personnes</button>',
+        '<button class="btn btn-ghost" onclick="' + callAttr('go', 'preuves') + '">Voir les preuves</button>',
+      '</div>',
+    '</section>',
+    '<section class="guide-grid">',
+      guideCard('01', 'Role du site CID', [
+        'Centraliser les enquetes CID dans un espace separe de l intranet SASP.',
+        'Regrouper dossiers, suspects, victimes, temoins, enqueteurs, preuves, photos, documents et notes.',
+        'Eviter les infos perdues dans Discord en gardant une fiche claire par affaire.'
+      ]),
+      guideCard('02', 'Creer un dossier', [
+        'Va dans Dossiers puis Nouveau dossier.',
+        'Renseigne au minimum le titre, le statut, la priorite, la classification, la confidentialite et le responsable.',
+        'Ajoute un resume court pour comprendre l affaire rapidement.',
+        'Le dossier apparait ensuite dans la liste et peut etre ouvert/modifie.'
+      ]),
+      guideCard('03', 'Statuts', [
+        'Ouvert : enquete active.',
+        'En attente : besoin d une info, d une validation ou d un retour.',
+        'Ferme / Classe : affaire terminee.',
+        'Archive : dossier retire de la vue principale mais conserve.'
+      ]),
+      guideCard('04', 'Priorites', [
+        'Faible : suivi simple.',
+        'Normale : dossier standard.',
+        'Haute : a traiter rapidement.',
+        'Critique : affaire sensible ou urgente.'
+      ]),
+      guideCard('05', 'Personnes liees', [
+        'Ajoute toutes les personnes importantes : suspect, victime, temoin, informateur ou enqueteur.',
+        'Pour un enqueteur, choisis un agent CID dans la liste quand elle est disponible.',
+        'Utilise le telephone au format serveur : 555-1234.',
+        'Tu peux ouvrir une fiche personne pour ajouter infos, photos, fichiers, rapport MDT et lien de rapport evenement.'
+      ]),
+      guideCard('06', 'Fiche personne', [
+        'Clique sur une personne pour ouvrir sa fiche dediee.',
+        'Ajoute photos, documents ou notes utiles a son identification.',
+        'Renseigne le rapport MDT # si la personne est liee a un rapport in-game.',
+        'Ajoute le lien du rapport evenement Discord si l info vient d un post/forum.'
+      ]),
+      guideCard('07', 'Preuves', [
+        'Ajoute une preuve depuis un dossier avec le menu Ajout.',
+        'Choisis le bon type : photo, document, ADN, douille, empreinte, arme, drogue, vehicule, objet, telephone, temoignage ou autre.',
+        'Pour une arme : indique le type d arme et le numero de serie.',
+        'Pour un vehicule : indique le modele, la plaque et le suspect lie si besoin.'
+      ]),
+      guideCard('08', 'Fichiers et images', [
+        'Le bouton fichier apparait seulement quand le type le necessite : photo, document, ADN, douille ou empreinte.',
+        'Une image ajoutee dans une preuve peut etre ouverte pour verification.',
+        'Si une mauvaise image est ajoutee, elle peut etre supprimee depuis la preuve.'
+      ]),
+      guideCard('09', 'Notes', [
+        'Les notes servent aux informations internes CID : pistes, hypotheses, consignes, suivi.',
+        'Elles doivent rester courtes et exploitables.',
+        'Une note peut etre modifiee apres creation.',
+        'Evite de melanger notes et historique automatique.'
+      ]),
+      guideCard('10', 'Recherche globale', [
+        'La barre en haut fonctionne comme un CTRL+F du site.',
+        'Elle cherche dans les dossiers, personnes, preuves, fichiers et notes.',
+        'Si un nom apparait dans une preuve ou une personne, le dossier parent apparait aussi dans les resultats.',
+        'Clique sur un resultat pour ouvrir directement le dossier concerne.'
+      ]),
+      guideCard('11', 'Archives et suppression', [
+        'Archive un dossier quand il doit etre conserve mais retire de la vue active.',
+        'Supprime uniquement en cas d erreur ou doublon.',
+        'La suppression est protegee par confirmation et reservee au role autorise + admins.',
+        'Si tu hesites, archive plutot que supprimer.'
+      ]),
+      guideCard('12', 'Gestion', [
+        'La page Gestion permet aux responsables de modifier les listes du site.',
+        'On peut ajouter ou retirer priorites, classifications, confidentialites et types de preuves.',
+        'Les changements s appliquent aux nouveaux dossiers et prochaines modifications.',
+        'Ne change pas une liste sans validation CID/Command Staff.'
+      ]),
+    '</section>',
+    '<section class="panel section guide-flow">',
+      '<div class="kicker">Workflow conseille</div>',
+      '<h2>Ordre simple pour traiter une enquete</h2>',
+      '<div class="flow-row">',
+        flowStep('1', 'Creer dossier', 'Titre clair, statut, priorite, confidentialite.'),
+        flowStep('2', 'Ajouter personnes', 'Suspects, victimes, temoins, enqueteurs.'),
+        flowStep('3', 'Ajouter preuves', 'Photos, armes, drogues, vehicules, documents.'),
+        flowStep('4', 'Noter le suivi', 'Ajoute les infos utiles en notes CID.'),
+        flowStep('5', 'Archiver', 'Quand l affaire est terminee ou classee.'),
+      '</div>',
+    '</section>',
+    '<section class="panel section guide-rules">',
+      '<div class="kicker">Regles rapides</div>',
+      '<h2>A retenir</h2>',
+      '<ul>',
+        '<li>Ne cree pas deux dossiers pour la meme affaire.</li>',
+        '<li>Utilise des titres courts et lisibles.</li>',
+        '<li>Une preuve doit toujours avoir une description utile.</li>',
+        '<li>Un suspect important doit avoir une fiche personne propre.</li>',
+        '<li>Archive au lieu de supprimer si le dossier doit etre conserve.</li>',
+      '</ul>',
+    '</section>'
+  ].join('');
+}
+
+function guideCard(num, title, lines) {
+  return [
+    '<article class="guide-card panel section">',
+      '<div class="guide-num">' + esc(num) + '</div>',
+      '<h2>' + esc(title) + '</h2>',
+      '<ul>' + lines.map(function(line) { return '<li>' + esc(line) + '</li>'; }).join('') + '</ul>',
+    '</article>'
+  ].join('');
+}
+
+function flowStep(num, title, text) {
+  return '<div class="flow-step"><strong>' + esc(num) + '</strong><span>' + esc(title) + '</span><p>' + esc(text) + '</p></div>';
+}
+
 function renderDashboard() {
   var list = casesLoad();
   var open = list.filter(function(c) { return c.statut === 'Ouvert'; }).length;
@@ -492,34 +619,231 @@ function renderWorkspace(c) {
   var people = c.personnes || [];
   var proofs = c.preuves || [];
   var notes = (c.journal || []).map(function(j, i) { return Object.assign({ _index: i }, j); }).filter(function(j) { return j.type === 'note'; });
+  var activeTab = STATE.route.tab || 'overview';
   return [
-    '<div class="workspace">',
-      '<div class="workspace-head">',
-        '<div><div class="case-id">' + esc(c.numero) + (isExampleCase(c) ? ' ' + badge('EXEMPLE', 'gold') : '') + '</div><h1>' + caseTitleHtml(c) + '</h1><div class="subline"><span>Ouvert le ' + esc(c.date_ouverture) + '</span><span>Derniere modif. ' + esc(c.updated_at) + '</span><span>Par ' + esc(c.responsable || 'CID') + '</span></div></div>',
-        '<div class="case-command-bar">' +
-          commandButton('&#9998;', 'Modifier', 'neutral', callAttr('openCaseModal', c.id)) +
-          addMenu(c) +
-          '<span class="command-divider"></span>' +
-          commandButton('&#9635;', 'Archiver', 'neutral', callAttr('archiveCase', c.id)) +
-          (canDeleteCases() ? commandButton('&#10005;', 'Supprimer', 'danger', callAttr('deleteCase', c.id)) : '') +
-        '</div>',
-      '</div>',
-      '<div class="chip-grid">',
-        chip('Statut', statusBadge(c.statut)),
-        chip('Priorite', priorityBadge(c.priorite)),
-        chip('Classification', esc(c.classification || '-')),
-        chip('Confidentialite', esc(c.confidentialite || '-')),
-      '</div>',
-      '<div class="detail-grid">',
-        '<section class="panel section"><h2>Personnes</h2>' + peopleTable(c, people) + '</section>',
-        '<section class="panel section"><h2>Preuves</h2>' + evidenceTable(c, proofs) + '</section>',
-      '</div>',
-      '<div class="wide-grid">',
-        '<section class="panel section"><h2>Resume / description</h2><p class="text">' + esc(c.resume || c.description || 'Aucun resume renseigne.') + '</p></section>',
-        '<section class="panel section"><h2>Notes</h2><div class="note-list">' + (notes.length ? notes.map(function(n) { return noteHtml(c, n); }).join('') : '<div class="note-item">Aucune note.</div>') + '</div></section>',
-      '</div>',
+    '<div class="workspace cid-case-workspace">',
+      caseSystemBar(),
+      caseBreadcrumb(c),
+      caseHero(c, people, proofs),
+      caseTabs(c, activeTab),
+      renderCaseTabContent(c, activeTab, people, proofs, notes),
     '</div>'
   ].join('');
+}
+
+function caseSystemBar() {
+  return [
+    '<div class="cid-system-strip">',
+      '<span><strong>CID MDT</strong> v3.2.8</span>',
+      '<span>Terminal : CID-SUD-04</span>',
+      '<span>Utilisateur : ' + esc(displayName()) + '</span>',
+      '<span class="sys-secure">Connexion securisee</span>',
+      '<span>Derniere synchronisation : il y a 12 sec</span>',
+    '</div>'
+  ].join('');
+}
+function caseBreadcrumb(c) {
+  return '<div class="cid-breadcrumb"><button onclick="' + callAttr('go', 'dashboard') + '">Accueil</button><span>&gt;</span><button onclick="' + callAttr('go', 'dossiers') + '">Enquetes</button><span>&gt;</span><button onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">' + esc(c.numero) + '</button><span>&gt;</span><strong>' + caseTitleHtml(c) + '</strong></div>';
+}
+function caseHero(c, people, proofs) {
+  return [
+    '<div class="cid-case-hero">',
+      '<div class="cid-hero-copy">',
+        '<div class="kicker">Dossier operationnel</div>',
+        '<div class="cid-title-line"><h1>' + caseTitleHtml(c) + '</h1>' + priorityBadge(c.priorite) + statusBadge(c.statut) + '</div>',
+        '<p>' + esc(c.resume || c.description || 'Aucun resume operationnel renseigne.') + '</p>',
+        '<div class="cid-hero-meta"><span>Ouvert le ' + esc(c.date_ouverture || '-') + '</span><span>Derniere modif. ' + esc(c.updated_at || '-') + '</span><span>Responsable : ' + esc(caseLead(c)) + '</span></div>',
+      '</div>',
+      '<div class="case-command-bar cid-command-bar">' +
+        commandButton('&#9998;', 'Modifier', 'neutral', callAttr('openCaseModal', c.id)) +
+        addMenu(c) +
+        '<span class="command-divider"></span>' +
+        commandButton('&#9635;', 'Archiver', 'neutral', callAttr('archiveCase', c.id)) +
+        (canDeleteCases() ? commandButton('&#10005;', 'Supprimer', 'danger', callAttr('deleteCase', c.id)) : '') +
+      '</div>',
+    '</div>',
+    '<div class="cid-intel-cards">',
+      intelCard('Suspects', countPeople(people, 'Suspect'), '&#9818;'),
+      intelCard('Victimes', countPeople(people, 'Victime'), '&#9679;'),
+      intelCard('Temoins', countPeople(people, 'Temoin'), '&#128065;'),
+      intelCard('Preuves', proofs.length, '&#9635;'),
+      intelCard('Temps ouvert', caseAge(c), '&#9201;'),
+      intelCard('Resolution', caseProgress(c) + '%', '&#10003;'),
+    '</div>'
+  ].join('');
+}
+function intelCard(label, value, icon) {
+  return '<article class="cid-intel-card"><i>' + icon + '</i><strong>' + esc(value) + '</strong><span>' + esc(label) + '</span></article>';
+}
+function caseTabs(c, active) {
+  var tabs = [
+    ['overview', 'Vue generale', ''],
+    ['board', 'Tableau enquete', ''],
+    ['personnes', 'Personnes', (c.personnes || []).length],
+    ['preuves', 'Preuves', (c.preuves || []).length],
+    ['rapports', 'Rapports', ''],
+    ['mandats', 'Mandats', ''],
+    ['chronologie', 'Chronologie', ''],
+    ['documents', 'Documents', ''],
+    ['journal', 'Journal', '']
+  ];
+  return '<div class="cid-tabbar">' + tabs.map(function(t) {
+    return '<button class="' + (active === t[0] ? 'active' : '') + '" onclick="' + callAttr('go', 'dossiers', { id: c.id, tab: t[0] }) + '"><span>' + esc(t[1]) + '</span>' + (t[2] !== '' ? '<em>' + esc(t[2]) + '</em>' : '') + '</button>';
+  }).join('') + '</div>';
+}
+function renderCaseTabContent(c, activeTab, people, proofs, notes) {
+  if (activeTab === 'board') return renderInvestigationBoard(c, people, proofs, true);
+  if (activeTab === 'personnes') return '<div class="cid-single-panel">' + casePeopleCards(c, people, true) + '</div>';
+  if (activeTab === 'preuves') return '<div class="cid-single-panel">' + caseEvidenceGallery(c, proofs, true) + '<section class="panel section cid-table-panel">' + evidenceTable(c, proofs) + '</section></div>';
+  if (activeTab === 'chronologie' || activeTab === 'journal') return '<div class="cid-single-panel">' + caseTimeline(c, activeTab === 'journal') + '</div>';
+  if (/rapports|mandats|documents/.test(activeTab)) return renderEmptyOperationalTab(activeTab);
+  return [
+    '<div class="cid-overview-grid">',
+      caseIdentityPanel(c, people, proofs),
+      caseInvestigationPanel(c, people, proofs),
+      casePeopleCards(c, people, false),
+      caseEvidenceGallery(c, proofs, false),
+      caseTimeline(c, false),
+      caseActivity(c),
+      renderInvestigationBoard(c, people, proofs, false),
+      '<section class="panel section cid-summary-panel"><h2>Resume operationnel</h2><p class="text">' + esc(c.description || c.resume || 'Aucun descriptif renseigne.') + '</p></section>',
+      '<section class="panel section cid-notes-panel"><h2>Notes CID</h2><div class="note-list">' + (notes.length ? notes.map(function(n) { return noteHtml(c, n); }).join('') : '<div class="note-item">Aucune note.</div>') + '</div></section>',
+    '</div>'
+  ].join('');
+}
+function renderEmptyOperationalTab(tab) {
+  var labels = { rapports: 'Rapports', mandats: 'Mandats', documents: 'Documents' };
+  return '<section class="panel section cid-empty-tab"><div class="kicker">Module CID</div><h2>' + esc(labels[tab] || tab) + '</h2><p class="text">Aucun element specialise n est encore rattache a ce dossier. Les preuves, notes et personnes restent disponibles dans leurs onglets.</p></section>';
+}
+function caseIdentityPanel(c, people, proofs) {
+  var progress = caseProgress(c);
+  return [
+    '<section class="panel section cid-identity-panel">',
+      '<div class="panel-head-mini"><div><div class="kicker">Dossier</div><h2>Fiche identite</h2></div>' + badge('Confidentiel', 'gold') + '</div>',
+      '<div class="case-id-grid">',
+        identityRow('Numero', c.numero),
+        identityRow('Cree le', c.date_ouverture),
+        identityRow('Responsable', caseLead(c)),
+        identityRow('Statut', statusBadge(c.statut), true),
+        identityRow('Priorite', priorityBadge(c.priorite), true),
+        identityRow('Classification', c.classification || '-'),
+        identityRow('Procureur', c.procureur || 'Aucun'),
+        identityRow('Juge', c.juge || 'Aucun'),
+        identityRow('Date limite', caseDeadline(c)),
+      '</div>',
+      '<div class="progress-block"><div><span>Progression dossier</span><strong>' + progress + '%</strong></div><div class="progress-track"><i style="width:' + progress + '%"></i></div></div>',
+    '</section>'
+  ].join('');
+}
+function identityRow(label, value, raw) {
+  return '<div class="identity-row"><span>' + esc(label) + '</span><strong>' + (raw ? value : esc(value || '-')) + '</strong></div>';
+}
+function caseInvestigationPanel(c, people, proofs) {
+  var investigators = people.filter(function(p) { return p.type === 'Enqueteur'; });
+  var lead = investigators[0] && investigators[0].nom || caseLead(c);
+  var assistants = investigators.slice(1).map(function(p) { return p.nom; }).join(', ') || 'Aucun assistant renseigne';
+  return [
+    '<section class="panel section cid-investigation-panel">',
+      '<div class="panel-head-mini"><div><div class="kicker">Enquete</div><h2>Suivi operationnel</h2></div></div>',
+      '<div class="invest-row"><span>Enqueteur principal</span><strong>' + esc(lead) + '</strong></div>',
+      '<div class="invest-row"><span>Assistants</span><strong>' + esc(assistants) + '</strong></div>',
+      '<div class="objective-list">',
+        objective('Identifier vehicule', proofs.some(function(e) { return e.type === 'Vehicule'; })),
+        objective('Verifier telephone', proofs.some(function(e) { return e.type === 'Telephone'; })),
+        objective('Exploiter ADN / empreintes', proofs.some(function(e) { return /ADN|Empreinte/i.test(e.type || ''); })),
+        objective('Interroger temoin', countPeople(people, 'Temoin') > 0),
+        objective('Preparer mandat', /mandat/i.test((c.description || '') + ' ' + (c.resume || ''))),
+      '</div>',
+    '</section>'
+  ].join('');
+}
+function objective(label, done) {
+  return '<div class="objective ' + (done ? 'done' : '') + '"><i>' + (done ? '&#10003;' : '') + '</i><span>' + esc(label) + '</span></div>';
+}
+function casePeopleCards(c, people, full) {
+  return '<section class="panel section cid-people-panel ' + (full ? 'full' : '') + '"><div class="panel-head-mini"><div><div class="kicker">Personnes</div><h2>Personnes liees</h2></div><button class="btn btn-ghost btn-small" onclick="' + callAttr('openPersonModal', c.id) + '">Ajouter</button></div>' + (people.length ? '<div class="person-card-grid">' + people.map(function(p) { return personCard(c, p); }).join('') + '</div>' : '<div class="text">Aucune personne liee.</div>') + '</section>';
+}
+function personCard(c, p) {
+  var danger = p.dangerosite || (/suspect/i.test(p.type || '') ? 'Elevee' : 'Normale');
+  var warrants = p.mandats || (/suspect/i.test(p.type || '') ? 'A verifier' : '0');
+  var casier = p.casier || (/suspect/i.test(p.type || '') ? 'Oui' : 'Non');
+  return [
+    '<article class="person-card" onclick="' + callAttr('go', 'dossiers', { id: c.id, person: p.id }) + '">',
+      '<div class="person-avatar">' + initials(p.nom) + '</div>',
+      '<div class="person-main"><strong>' + esc(p.nom || 'Inconnu') + '</strong><span>' + esc(p.alias ? 'Alias : ' + p.alias : p.type || 'Personne') + '</span></div>',
+      badge(p.type || 'Personne', /suspect/i.test(p.type || '') ? 'red' : 'blue'),
+      '<dl><dt>Dangerosite</dt><dd>' + esc(danger) + '</dd><dt>Mandats</dt><dd>' + esc(warrants) + '</dd><dt>Casier</dt><dd>' + esc(casier) + '</dd><dt>Telephone</dt><dd>' + esc(p.tel || '-') + '</dd></dl>',
+    '</article>'
+  ].join('');
+}
+function caseEvidenceGallery(c, proofs, full) {
+  return '<section class="panel section cid-evidence-panel ' + (full ? 'full' : '') + '"><div class="panel-head-mini"><div><div class="kicker">Scelles</div><h2>Preuves et pieces</h2></div><button class="btn btn-gold btn-small" onclick="' + callAttr('openEvidenceModal', c.id) + '">Ajouter</button></div>' + (proofs.length ? '<div class="evidence-card-grid">' + proofs.map(function(e) { return evidenceCard(c, e); }).join('') + '</div>' : '<div class="text">Aucune preuve scellee.</div>') + '</section>';
+}
+function evidenceCard(c, e) {
+  var icon = evidenceIcon(e.type);
+  var thumb = e.attachment && e.attachment.data ? '<div onclick="event.stopPropagation()">' + attachmentHtml(e.attachment, functionName('previewEvidence', c.id, e.id)) + '</div>' : '<div class="evidence-icon">' + icon + '</div>';
+  return '<article class="evidence-card" onclick="' + callAttr('openEvidenceModal', c.id, e.id) + '">' + thumb + '<div><strong>' + esc(e.scelle || 'SC') + '</strong><span>' + esc(e.type || 'Preuve') + '</span></div><p>' + esc(proofDetailsText(c, e) || e.description || 'Aucun detail') + '</p></article>';
+}
+function caseTimeline(c, notesOnly) {
+  var journal = (c.journal || []).map(function(j, i) { return Object.assign({ _index: i }, j); }).reverse();
+  if (notesOnly) journal = journal.filter(function(j) { return j.type === 'note'; });
+  if (!journal.length) journal = [{ date: c.date_ouverture || '-', texte: 'Dossier cree', type: 'system' }];
+  return '<section class="panel section cid-timeline-panel"><div class="panel-head-mini"><div><div class="kicker">Chronologie</div><h2>' + (notesOnly ? 'Notes' : 'Timeline dossier') + '</h2></div><button class="btn btn-ghost btn-small" onclick="' + callAttr('openNoteModal', c.id) + '">Note</button></div><div class="timeline">' + journal.map(function(j) { return '<button class="timeline-item" onclick="' + (j.type === 'note' ? callAttr('openNoteModal', c.id, j._index) : '') + '"><time>' + esc(j.date || '-') + '</time><i></i><span>' + esc(j.texte || '-') + '</span></button>'; }).join('') + '</div></section>';
+}
+function caseActivity(c) {
+  var items = (c.journal || []).slice(-5).reverse();
+  if (!items.length) items = [{ date: c.updated_at || '-', texte: 'Dossier consulte' }];
+  return '<section class="panel section cid-activity-panel"><div class="panel-head-mini"><div><div class="kicker">Activite</div><h2>Flux recent</h2></div></div>' + items.map(function(j) { return '<div class="activity-row"><strong>' + esc(displayName()) + '</strong><span>' + esc(j.texte || 'Mise a jour dossier') + '</span><em>' + esc(j.date || '-') + '</em></div>'; }).join('') + '</section>';
+}
+function renderInvestigationBoard(c, people, proofs, full) {
+  var nodes = people.slice(0, 5).map(function(p, i) { return { kind: 'person', id: p.id, title: p.nom, sub: p.type, x: 12 + (i % 3) * 28, y: 18 + Math.floor(i / 3) * 35 }; });
+  proofs.slice(0, 6).forEach(function(e, i) { nodes.push({ kind: 'proof', id: e.id, title: e.scelle || e.type, sub: e.type, x: 18 + (i % 3) * 28, y: 62 + Math.floor(i / 3) * 24 }); });
+  if (!nodes.length) nodes = [{ kind: 'case', id: c.id, title: c.numero, sub: c.titre, x: 44, y: 42 }];
+  var lines = [];
+  for (var i = 1; i < nodes.length; i++) lines.push('<line x1="' + (nodes[0].x + 8) + '%" y1="' + (nodes[0].y + 4) + '%" x2="' + (nodes[i].x + 8) + '%" y2="' + (nodes[i].y + 4) + '%"></line>');
+  return '<section class="panel section cid-board-panel ' + (full ? 'full' : '') + '"><div class="panel-head-mini"><div><div class="kicker">Tableau enquete</div><h2>Mur de liaison</h2></div><button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id, tab: 'board' }) + '">Ouvrir</button></div><div class="investigation-board"><svg viewBox="0 0 100 100" preserveAspectRatio="none">' + lines.join('') + '</svg>' + nodes.map(function(n) { return '<button class="board-node ' + esc(n.kind) + '" style="left:' + n.x + '%;top:' + n.y + '%" onclick="' + (n.kind === 'person' ? callAttr('go', 'dossiers', { id: c.id, person: n.id }) : n.kind === 'proof' ? callAttr('openEvidenceModal', c.id, n.id) : '') + '"><strong>' + esc(n.title) + '</strong><span>' + esc(n.sub || '') + '</span></button>'; }).join('') + '</div></section>';
+}
+function countPeople(people, type) { return people.filter(function(p) { return p.type === type; }).length; }
+function initials(name) {
+  return String(name || 'CID').split(/\s+/).filter(Boolean).slice(0, 2).map(function(p) { return p.charAt(0).toUpperCase(); }).join('') || 'CID';
+}
+function caseLead(c) {
+  var inv = (c.personnes || []).find(function(p) { return p.type === 'Enqueteur'; });
+  return inv && inv.nom || c.responsable || displayName();
+}
+function caseProgress(c) {
+  var score = 18;
+  score += Math.min((c.personnes || []).length * 8, 30);
+  score += Math.min((c.preuves || []).length * 7, 35);
+  score += Math.min((c.journal || []).length * 3, 17);
+  if (/ferme|classe/i.test(c.statut || '')) score = 100;
+  return Math.max(12, Math.min(100, score));
+}
+function caseAge(c) {
+  var start = new Date(String(c.date_ouverture || '').replace(' ', 'T'));
+  if (isNaN(start.getTime())) return '-';
+  var diff = Date.now() - start.getTime();
+  var days = Math.max(0, Math.floor(diff / 86400000));
+  if (days > 0) return days + ' j';
+  var hours = Math.max(1, Math.floor(diff / 3600000));
+  return hours + ' h';
+}
+function caseDeadline(c) {
+  if (c.date_limite) return c.date_limite;
+  var start = new Date(String(c.date_ouverture || '').replace(' ', 'T'));
+  if (isNaN(start.getTime())) return 'A definir';
+  start.setDate(start.getDate() + 2);
+  return start.toISOString().slice(0, 10);
+}
+function evidenceIcon(type) {
+  if (/arme/i.test(type || '')) return '&#128299;';
+  if (/vehicule/i.test(type || '')) return '&#128663;';
+  if (/photo/i.test(type || '')) return '&#128247;';
+  if (/video/i.test(type || '')) return '&#127909;';
+  if (/audio/i.test(type || '')) return '&#127908;';
+  if (/drogue/i.test(type || '')) return '&#9670;';
+  if (/douille|empreinte|adn/i.test(type || '')) return '&#128269;';
+  return '&#9635;';
 }
 
 function chip(label, value) { return '<div class="chip"><span>' + esc(label) + '</span><strong>' + value + '</strong></div>'; }

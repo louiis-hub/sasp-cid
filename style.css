@@ -278,6 +278,7 @@ button { cursor: pointer; }
   min-height: calc(100vh - 150px);
 }
 .panel { overflow: hidden; }
+.mdt-grid > .panel:nth-child(2) { overflow: visible; }
 .panel-head {
   display: flex;
   align-items: center;
@@ -775,12 +776,460 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
 .file-card:hover .file-remove,
 .file-remove:focus { opacity: 1; }
 
+/* CID premium dossier view */
+.cid-case-workspace {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+.cid-case-workspace::before {
+  content: "SAN ANDREAS STATE POLICE\A CRIMINAL INVESTIGATION DIVISION\A CONFIDENTIEL\A AUTHORIZED PERSONNEL ONLY";
+  white-space: pre;
+  position: fixed;
+  right: 5vw;
+  bottom: 6vh;
+  z-index: 0;
+  color: rgba(216, 182, 71, .035);
+  font-weight: 900;
+  font-size: clamp(38px, 5vw, 92px);
+  line-height: 1.08;
+  letter-spacing: .08em;
+  text-align: right;
+  pointer-events: none;
+}
+.cid-case-workspace > * { position: relative; z-index: 1; }
+.cid-system-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid rgba(216,182,71,.18);
+  border-radius: 8px;
+  background: rgba(7, 8, 8, .82);
+  color: #9eacb9;
+  font-size: 11px;
+  letter-spacing: .03em;
+}
+.cid-system-strip span {
+  padding-right: 10px;
+  border-right: 1px solid rgba(216,182,71,.14);
+}
+.cid-system-strip span:last-child { border-right: 0; }
+.cid-system-strip strong { color: var(--gold); letter-spacing: .14em; }
+.sys-secure { color: #50df94; }
+.cid-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: #8395a9;
+  font-size: 12px;
+}
+.cid-breadcrumb button {
+  border: 0;
+  background: transparent;
+  color: #8db9ff;
+  padding: 0;
+}
+.cid-breadcrumb strong { color: #eaf2ff; font-weight: 700; }
+.cid-case-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding: 18px;
+  border: 1px solid rgba(216,182,71,.22);
+  border-radius: 12px;
+  background:
+    linear-gradient(120deg, rgba(20, 29, 39, .88), rgba(8, 9, 9, .92)),
+    radial-gradient(circle at 88% 10%, rgba(216,182,71,.16), transparent 30%);
+  box-shadow: 0 24px 70px rgba(0,0,0,.24);
+}
+.cid-title-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.cid-title-line h1 {
+  margin: 4px 0 2px;
+  font-size: clamp(24px, 2.1vw, 34px);
+  letter-spacing: -.02em;
+}
+.cid-hero-copy p {
+  max-width: 900px;
+  margin: 8px 0 0;
+  color: #bdd3ec;
+  line-height: 1.55;
+}
+.cid-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  color: #8b9fb4;
+  font-size: 12px;
+}
+.cid-command-bar { align-self: start; flex-wrap: wrap; max-width: 430px; }
+.cid-intel-cards {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 10px;
+}
+.cid-intel-card {
+  min-height: 86px;
+  padding: 13px;
+  border: 1px solid rgba(91,139,190,.22);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(11, 20, 33, .82), rgba(9, 10, 10, .9));
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+.cid-intel-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(216,182,71,.5);
+  background: linear-gradient(145deg, rgba(18, 30, 45, .88), rgba(12, 13, 13, .94));
+}
+.cid-intel-card i { color: var(--gold); font-style: normal; opacity: .95; }
+.cid-intel-card strong {
+  display: block;
+  margin-top: 10px;
+  color: var(--gold);
+  font-size: 26px;
+  line-height: 1;
+}
+.cid-intel-card span {
+  display: block;
+  margin-top: 8px;
+  color: #8eb5e4;
+  font-size: 10px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.cid-tabbar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px;
+  border: 1px solid rgba(216,182,71,.16);
+  border-radius: 10px;
+  background: rgba(5, 8, 12, .78);
+}
+.cid-tabbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(9, 18, 31, .55);
+  color: #9db8d8;
+  padding: 9px 11px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+}
+.cid-tabbar button.active,
+.cid-tabbar button:hover {
+  color: #f4d25a;
+  border-color: rgba(216,182,71,.5);
+  background: rgba(216,182,71,.11);
+}
+.cid-tabbar em {
+  min-width: 18px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgba(117,180,255,.14);
+  color: #b6d8ff;
+  font-style: normal;
+  font-size: 11px;
+  text-align: center;
+}
+.cid-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(340px, .82fr);
+  gap: 12px;
+}
+.cid-single-panel { display: grid; gap: 12px; }
+.panel-head-mini {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.panel-head-mini h2 { margin: 4px 0 0; }
+.case-id-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.identity-row {
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid rgba(91,139,190,.18);
+  border-radius: 8px;
+  background: rgba(7, 14, 23, .48);
+}
+.identity-row span,
+.invest-row span {
+  display: block;
+  color: #8b9fb4;
+  font-size: 10px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.identity-row strong,
+.invest-row strong {
+  display: block;
+  margin-top: 7px;
+  color: #edf5ff;
+}
+.progress-block {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid rgba(216,182,71,.18);
+  border-radius: 9px;
+  background: rgba(216,182,71,.055);
+}
+.progress-block > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  color: #a9b8c9;
+  font-size: 12px;
+}
+.progress-block strong { color: var(--gold); }
+.progress-track {
+  height: 8px;
+  margin-top: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255,255,255,.07);
+}
+.progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2b83ff, #d8b647);
+}
+.cid-investigation-panel,
+.cid-activity-panel { align-self: start; }
+.invest-row {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(216,182,71,.1);
+}
+.objective-list { display: grid; gap: 8px; margin-top: 12px; }
+.objective {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px;
+  border: 1px solid rgba(91,139,190,.18);
+  border-radius: 8px;
+  color: #b8c9dd;
+  background: rgba(7, 14, 23, .42);
+}
+.objective i {
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(216,182,71,.45);
+  border-radius: 5px;
+  color: #111;
+  background: rgba(216,182,71,.12);
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 11px;
+}
+.objective.done i { background: var(--green); border-color: var(--green); }
+.cid-people-panel.full,
+.cid-evidence-panel.full,
+.cid-board-panel.full,
+.cid-empty-tab { min-height: calc(100vh - 255px); }
+.person-card-grid,
+.evidence-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+.person-card,
+.evidence-card {
+  border: 1px solid rgba(91,139,190,.20);
+  border-radius: 10px;
+  background: rgba(7, 14, 23, .58);
+  padding: 12px;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease;
+}
+.person-card:hover,
+.evidence-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(216,182,71,.52);
+}
+.person-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+.person-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(216,182,71,.38);
+  background: linear-gradient(145deg, rgba(216,182,71,.16), rgba(91,139,190,.14));
+  color: var(--gold);
+  font-weight: 900;
+}
+.person-main strong,
+.evidence-card strong { display: block; color: #fff; }
+.person-main span,
+.evidence-card span { display: block; color: #8eb5e4; font-size: 12px; margin-top: 3px; }
+.person-card dl {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 0;
+}
+.person-card dt { color: #7d91a8; font-size: 10px; text-transform: uppercase; }
+.person-card dd { margin: 3px 0 0; color: #d9e9ff; font-weight: 700; }
+.evidence-card {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+}
+.evidence-card .btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.evidence-card p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #a9bfd7;
+  line-height: 1.45;
+}
+.evidence-icon {
+  width: 96px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(216,182,71,.26);
+  border-radius: 7px;
+  background: rgba(216,182,71,.08);
+  color: var(--gold);
+  font-size: 23px;
+}
+.cid-timeline-panel,
+.cid-board-panel,
+.cid-summary-panel { grid-column: 1 / -1; }
+.timeline {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 76px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: rgba(216,182,71,.22);
+}
+.timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px 22px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  padding: 7px 8px;
+  text-align: left;
+}
+.timeline-item:hover { background: rgba(216,182,71,.06); }
+.timeline-item time { color: #8eb5e4; font-size: 12px; }
+.timeline-item i {
+  width: 12px;
+  height: 12px;
+  margin-top: 2px;
+  border-radius: 999px;
+  border: 2px solid #0a0c0e;
+  background: var(--gold);
+  box-shadow: 0 0 0 1px rgba(216,182,71,.5);
+}
+.timeline-item span { color: #c8daf1; line-height: 1.45; }
+.activity-row {
+  display: grid;
+  gap: 3px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(216,182,71,.1);
+}
+.activity-row strong { color: #fff; }
+.activity-row span { color: #b9cde4; }
+.activity-row em { color: #7d91a8; font-style: normal; font-size: 12px; }
+.investigation-board {
+  position: relative;
+  min-height: 430px;
+  border: 1px solid rgba(216,182,71,.16);
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(91,139,190,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91,139,190,.05) 1px, transparent 1px),
+    radial-gradient(circle at 50% 30%, rgba(216,182,71,.09), transparent 32%),
+    rgba(4, 8, 13, .78);
+  background-size: 28px 28px, 28px 28px, auto, auto;
+}
+.investigation-board svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.investigation-board line {
+  stroke: rgba(216,182,71,.34);
+  stroke-width: .25;
+}
+.board-node {
+  position: absolute;
+  width: 180px;
+  min-height: 66px;
+  border: 1px solid rgba(91,139,190,.28);
+  border-radius: 10px;
+  background: rgba(9, 17, 29, .94);
+  color: #fff;
+  padding: 10px;
+  text-align: left;
+  box-shadow: 0 14px 32px rgba(0,0,0,.22);
+}
+.board-node.person { border-color: rgba(255, 77, 94, .42); }
+.board-node.proof { border-color: rgba(216,182,71,.42); }
+.board-node strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.board-node span { color: #9db8d8; font-size: 12px; }
+
 @media (max-width: 1100px) {
   .app-shell { grid-template-columns: 1fr; }
   .sidebar { display: none; }
   .mdt-grid, .detail-grid, .wide-grid { grid-template-columns: 1fr; }
   .dashboard-grid, .chip-grid, .gestion-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .topbar { grid-template-columns: 1fr; }
+  .cid-intel-cards { grid-template-columns: repeat(3, minmax(120px, 1fr)); }
+  .cid-overview-grid { grid-template-columns: 1fr; }
+  .cid-case-hero { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 650px) {
@@ -791,4 +1240,7 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
   .case-command-bar { justify-content: flex-start; flex-wrap: wrap; }
   .command-btn { flex: 1 1 96px; }
   .command-divider { display: none; }
+  .cid-intel-cards { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+  .case-id-grid, .person-card dl { grid-template-columns: 1fr 1fr; }
+  .board-node { width: 150px; }
 }
