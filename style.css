@@ -173,14 +173,15 @@ button { cursor: pointer; }
 .nav button {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   text-align: left;
   width: 100%;
   border: 1px solid transparent;
   border-radius: 7px;
-  padding: 10px 12px;
+  padding: 9px 10px;
   background: transparent;
   color: #b8b7af;
+  font-size: 14px;
 }
 .nav button.active {
   border-color: rgba(216, 182, 71, .36);
@@ -188,7 +189,25 @@ button { cursor: pointer; }
   color: #f4d25a;
   box-shadow: inset 3px 0 var(--gold);
 }
-.nav-icon { width: 18px; color: var(--gold); text-align: center; }
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 24px;
+  border: 1px solid rgba(216,182,71,.22);
+  border-radius: 6px;
+  background: rgba(216,182,71,.06);
+  color: var(--gold);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-align: center;
+}
+.nav button.active .nav-icon {
+  border-color: rgba(216,182,71,.52);
+  background: rgba(216,182,71,.16);
+}
 .nav-group {
   color: var(--gold);
   letter-spacing: .28em;
