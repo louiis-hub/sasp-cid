@@ -767,9 +767,9 @@ function personCard(c, p) {
         '<div class="person-card-counts"><span>' + reports.length + ' rapport(s) MDT lie(s)</span><span>' + seizures + ' saisie(s) / preuve(s) liee(s)</span></div>',
       '</div>',
       '<div class="person-card-actions">',
-        '<button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id, person: p.id }) + '">Voir la fiche</button>',
-        '<button class="btn btn-ghost btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id) + '">Lier un rapport MDT</button>',
-        '<button class="btn btn-gold btn-small" onclick="' + callAttr('openEvidenceModal', c.id) + '">Ajouter une saisie</button>',
+        '<button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id, person: p.id }) + '">Fiche</button>',
+        '<button class="btn btn-ghost btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id) + '">Rapport</button>',
+        '<button class="btn btn-gold btn-small" onclick="' + callAttr('openEvidenceModal', c.id) + '">Saisie</button>',
       '</div>',
     '</article>'
   ].join('');

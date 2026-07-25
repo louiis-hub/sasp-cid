@@ -1085,26 +1085,54 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
   align-items: start;
 }
 .person-card-wide {
-  grid-template-columns: 58px minmax(0, 1fr) auto;
-  align-items: center;
+  position: relative;
+  overflow: hidden;
+  grid-template-areas:
+    "avatar body"
+    ". actions";
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: start;
   cursor: default;
+  padding: 14px;
+  gap: 14px;
+  border-color: rgba(216,182,71,.32);
+  background:
+    radial-gradient(circle at 18px 18px, rgba(216,182,71,.12), transparent 120px),
+    linear-gradient(135deg, rgba(7, 14, 23, .92), rgba(10, 22, 35, .70));
+}
+.person-card-wide::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(216,182,71,.78), rgba(42,118,242,.25), transparent);
+  opacity: .85;
 }
 .person-card-open {
+  grid-area: avatar;
+  align-self: center;
   border: 0;
   padding: 0;
   background: transparent;
   cursor: pointer;
+}
+.person-card-body {
+  grid-area: body;
+  min-width: 0;
 }
 .person-card-title {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
 }
 .person-card-title strong {
   display: block;
   color: #fff;
   font-size: 16px;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 .person-card-title span {
   display: block;
@@ -1115,22 +1143,60 @@ tr.clickable:hover { background: rgba(75,149,255,.06); }
 .person-card-info,
 .person-card-counts,
 .case-report-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
   margin-top: 10px;
   color: #8eb5e4;
   font-size: 12px;
+}
+.person-card-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+}
+.person-card-counts,
+.case-report-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+.person-card-info span,
+.person-card-counts span {
+  min-width: 0;
+}
+.person-card-info span {
+  display: block;
+  border: 1px solid rgba(91,139,190,.18);
+  border-radius: 8px;
+  background: rgba(91,139,190,.06);
+  padding: 7px 8px;
+  line-height: 1.15;
+}
+.person-card-info strong {
+  display: block;
+  margin-top: 3px;
+  color: #fff;
 }
 .person-card-info strong,
 .person-card-counts span {
   color: #d9e9ff;
 }
+.person-card-counts span {
+  border: 1px solid rgba(91,139,190,.22);
+  border-radius: 999px;
+  background: rgba(91,139,190,.08);
+  padding: 5px 8px;
+  font-size: 11px;
+}
 .person-card-actions {
+  grid-area: actions;
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
+  margin-top: 0;
+}
+.person-card-actions .btn {
+  min-height: 32px;
+  white-space: nowrap;
 }
 .person-avatar {
   width: 44px;
