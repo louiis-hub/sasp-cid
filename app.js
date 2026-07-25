@@ -790,7 +790,7 @@ function caseReportCard(c, p, r) {
   var title = r.titre || r.resume || 'Rapport MDT lie';
   return [
     '<article class="case-report-card">',
-      '<div class="case-report-top"><strong>RAPPORT MDT #' + esc(reportNumber(r)) + '</strong>' + badge(r.statut || 'En cours', /clot|condam|classe/i.test(r.statut || '') ? 'green' : 'gold') + '</div>',
+      '<div class="case-report-top"><strong>RAPPORT MDT #' + esc(reportNumber(r)) + '</strong>' + badge(r.statut || 'Rapport lie', /clot|condam|classe/i.test(r.statut || '') ? 'green' : 'gold') + '</div>',
       '<h3>' + esc(title) + '</h3>',
       '<p>' + esc(r.resume || 'Aucun resume court renseigne.') + '</p>',
       '<div class="case-report-meta">',
@@ -1015,7 +1015,7 @@ function renderMdtReportWorkspace(c, reportId) {
     '<div class="workspace report-workspace">',
       '<button class="btn btn-ghost btn-small" onclick="' + callAttr('go', 'dossiers', { id: c.id }) + '">Retour au dossier</button>',
       '<div class="report-detail-head">',
-        '<div><div class="case-id">Rapport MDT lie</div><h1>' + esc(r.numero || 'MDT') + ' - ' + esc(r.titre || 'Rapport') + '</h1><div class="subline"><span>' + esc(c.numero) + '</span><span>Personne liee : ' + esc(p.nom || '-') + '</span><span>' + esc(r.statut || 'En cours') + '</span></div></div>',
+        '<div><div class="case-id">Rapport MDT lie</div><h1>' + esc(r.numero || 'MDT') + ' - ' + esc(r.titre || 'Rapport') + '</h1><div class="subline"><span>' + esc(c.numero) + '</span><span>Personne liee : ' + esc(p.nom || '-') + '</span><span>' + esc(r.statut || 'Rapport lie') + '</span></div></div>',
         '<div class="actions"><button class="btn btn-ghost btn-small" onclick="' + callAttr('openMdtReportModal', c.id, p.id, r.id) + '">Modifier</button><button class="btn btn-red btn-small" onclick="' + callAttr('deleteMdtReport', c.id, p.id, r.id) + '">Dissocier</button></div>',
       '</div>',
       '<div class="report-detail-layout">',
@@ -1025,9 +1025,8 @@ function renderMdtReportWorkspace(c, reportId) {
             identityRow('Numero', r.numero || 'MDT'),
             identityRow('Type', r.type || 'Rapport MDT'),
             identityRow('Date', r.date_rapport || r.date_arrestation || '-'),
-            identityRow('Statut', r.statut || 'En cours'),
+            identityRow('Statut', r.statut || 'Rapport lie'),
             identityRow('Agent redacteur', r.agent || '-'),
-            identityRow('Agents impliques', r.agents_impliques || r.auteurs || '-'),
           '</div>',
           '<h3>Resume / description</h3><p class="text preline">' + esc(r.resume || 'Aucun resume renseigne.') + '</p>',
           '<h3>Chefs d inculpation</h3><p class="text preline">' + esc(charges || 'Aucun chef renseigne.') + '</p>',
@@ -1039,7 +1038,6 @@ function renderMdtReportWorkspace(c, reportId) {
           '</div>',
         '</section>',
         '<aside class="report-side-grid">',
-          reportSideBlock('Agents impliques', [r.agent, r.agents_impliques || r.auteurs].filter(Boolean).join(', ') || '-'),
           reportLinksBlock('Suspects', suspects.map(function(x) { return { label: x.nom || 'Suspect', action: callAttr('go', 'dossiers', { id: c.id, person: x.id }) }; })),
           reportLinksBlock('Civils', civilians.map(function(x) { return { label: x.nom || 'Civil', action: callAttr('go', 'dossiers', { id: c.id, person: x.id }) }; })),
           reportEvidenceBlock('Armes', c, weapons),
@@ -1126,13 +1124,12 @@ function personReportsPanel(c, p, arrestOnly) {
 function reportCard(c, p, r) {
   var charges = r.charges_text || reportCharges(r).map(function(ch) { return ch.nom || ch; }).join(', ');
   return '<article class="judicial-card mdt-link-card">' +
-    '<div class="case-report-top"><strong>RAPPORT MDT #' + esc(reportNumber(r)) + '</strong>' + badge(r.statut || 'En cours', /condam|classe|clos/i.test(r.statut || '') ? 'green' : 'gold') + '</div>' +
+    '<div class="case-report-top"><strong>RAPPORT MDT #' + esc(reportNumber(r)) + '</strong>' + badge(r.statut || 'Rapport lie', /condam|classe|clos/i.test(r.statut || '') ? 'green' : 'gold') + '</div>' +
     '<h3>' + esc(r.titre || 'Rapport MDT lie') + '</h3>' +
     '<div class="report-grid compact">' +
       identityRow('Type', r.type || 'Rapport MDT') +
       identityRow('Date', r.date_rapport || r.date_arrestation || '-') +
       identityRow('Agent redacteur', r.agent || '-') +
-      identityRow('Agents impliques', r.agents_impliques || r.auteurs || '-') +
       identityRow('Dossier CID', r.dossier_cid || c.numero || '-') +
       identityRow('Chefs', charges || '-') +
     '</div>' +
@@ -1512,11 +1509,8 @@ function openMdtReportModal(caseId, pid, reportId) {
     '<form id="mdtReportForm"><div class="form-grid">' +
       '<input name="numero" placeholder="Numero du rapport MDT" value="' + esc(r && r.numero || '') + '">' +
       '<input name="titre" placeholder="Titre du rapport" value="' + esc(r && r.titre || '') + '">' +
-      '<input name="type" placeholder="Type du rapport" value="' + esc(r && r.type || 'Arrestation') + '">' +
       '<input name="date_rapport" type="datetime-local" value="' + esc(toDateTimeLocal(r && (r.date_rapport || r.date_arrestation) || '')) + '">' +
       '<input name="agent" placeholder="Agent redacteur" value="' + esc(r && r.agent || '') + '">' +
-      '<input name="agents_impliques" placeholder="Agents impliques" value="' + esc(r && (r.agents_impliques || r.auteurs) || '') + '">' +
-      '<select name="statut">' + options(['Brouillon','En cours','Transmis procureur','Condamne','Relaxe','Classe'], r && r.statut || 'En cours') + '</select>' +
       '<textarea class="full" name="charges_text" rows="3" placeholder="Chefs d inculpation">' + esc(r && (r.charges_text || reportCharges(r).map(function(ch) { return ch.nom || ch; }).join('\\n')) || '') + '</textarea>' +
       '<textarea class="full" name="resume" rows="5" placeholder="Resume facultatif">' + esc(r && r.resume || '') + '</textarea>' +
     '</div></form>',
@@ -1537,14 +1531,14 @@ function saveMdtReport(caseId, pid, reportId) {
   }
   r.numero = fd.get('numero') || ('MDT-' + new Date().getFullYear() + '-' + String(p.mdt_reports.length).padStart(4, '0'));
   r.titre = fd.get('titre') || '';
-  r.type = fd.get('type') || 'Rapport MDT';
+  r.type = r.type || 'Rapport MDT';
   r.date_rapport = fromDateTimeLocal(fd.get('date_rapport') || '');
   r.date_arrestation = r.date_rapport;
   r.agent = fd.get('agent') || '';
-  r.agents_impliques = fd.get('agents_impliques') || '';
+  r.agents_impliques = r.agents_impliques || '';
   r.auteurs = r.agents_impliques;
   r.dossier_cid = c.numero || '';
-  r.statut = fd.get('statut') || 'En cours';
+  r.statut = r.statut || '';
   r.charges_text = fd.get('charges_text') || '';
   r.charges = r.charges_text ? String(r.charges_text).split(/\n|,/).map(function(name) { return { nom: name.trim(), amende: '', prison: '' }; }).filter(function(ch) { return ch.nom; }) : [];
   r.resume = fd.get('resume') || '';
